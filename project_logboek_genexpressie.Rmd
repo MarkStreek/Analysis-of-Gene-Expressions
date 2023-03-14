@@ -1,0 +1,203 @@
+---
+title: "Project_logboek_Genexpressie"
+author: "Mark van de Streek"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+# Gen expressie Logboek
+
+In dit logboek wordt een onderzoek uitgelicht naar het roken van sigaretten en de elektronische sigaret, ook wel de vape genoemd. In het onderzoek is gebruikt gemaakt van RNA-seq data. Er is dus gekeken naar expressie van bepaalde genen. Om precies te zijn is er gekeken naar genen die aanwezig zijn in leukocyten (witte bloedcellen).
+
+## Het onderzoek 
+
+Er is gekeken naar de activiteit van genen van de volgende groepen mensen:
+
+-   Vapers (mensen die een elektronische sigaret roken)
+-   Mensen die de traditionele sigaret roken
+-   Mensen die geen tabaksproducten gebruiken
+
+Om mensen te verkrijgen voor het onderzoek werd er om te beginnen een online vragenlijst gemaakt. Vervolgens werd er voor deze vragenlijst reclame gemaakt online, op bijvoorbeeld Reddit en Twitter. Aan de hand van de deze vragenlijst werden de mensen die geschikt leken voor het onderzoek uitgenodigd voor een gesprek. In dit gepsprek werden nog een aantal vragen en checklists gemaakt om er zeker van te zijn dat de persoon geschikt is voor het onderzoek.
+
+Uit de resultaten bleek dat de mensen die op dit moment Vapen, maar vroger niet rookten, een significant andere genregulatie hebben ten opzichte van mensen uit de controle groep. Ook mitochondriale genen en immuunresponsgenen waren significant ontregeld.
+
+### Verdeling van de groepen
+
+In alle verschillende groepen waren een aantal mensen die voor het onerzoek werden gebruikt. Onderstaand de aantallen in een kleine tabel.
+
+| Vapers | Traditionele rokers | Niet-rokers |
+|--------|---------------------|-------------|
+| 37     | 22                  | 23          |
+
+: Aantal mensen per groep
+
+Er werd bij de deelnemers ook gekeken naar geslacht, leeftijd, etniciteit, rassen en ook naar mensen die kunnen lezen en schrijven in het Engels. Het onderzoek vond plaats in Los Angeles. 
+
+De opzet van het onderzoek was om de verschillen tussen alle drie de groepen duidelijk weer te geven. In vele eerdere onderzoeken werden vaak deelnemers gekozen die vapen, maar vaak met een geschiedenis in andere rookgewoonten. Er namen dus mensen deel aan het onderzoek die eerder traditionele sigaretten rookten en op latere tijd zijn overgestapt naar elektronische sigaretten. 
+
+De groep die werd geclassificeerd als vapers in dit onderzoek heeft in de 6 maanden voor het onderzoek geen traditionele sigaret gebruikt. De onderzoekers hebben bewust voor een periode van 'maar' 6 maanden gekozen, omdat de elektronische sigaret nog niet zo heel lang bestaat. door het kiezen van een periode van 6 maanden, zijn er meer mensen die deel konden nemen aan het onderzoek. Voor de traditionele rokers groep werd een periode van 1 jaar gebruikt voor deelname. 
+
+Met behulp van bioinformatische bevindingen zijn in dit onderzoek onderscheid gemaakt tussen gezonde volwassen vapers, met en zonder geschiedenis van roken, en 'exclusieve' sigaretten rokers. Ook is specifiek de expressie van genen in rokers (zowel e-sigaret als traditionele rokers) vergeleken met niet-rokers.
+
+## Inladen van de Data
+
+Onderstaand wordt de data van het bestand ingeladen. Helaas is er in het bestand nog niet duidelijk welke samples precies bij welke groep horen. Vandaar dat er nog een aantal stappen moeten worden uitgevoerd om de juiste namen bij de juiste samples te krijgen. 
+
+```{r}
+data <- read.table("GSE169757_Partek_Hum_BC_RNA_Jan2018_UnfilteredCounts_82.txt", header = T, sep = "\t")
+```
+
+```{r}
+# Het inladen van de library
+library(GEOquery)
+
+# Opzoeken van het ID en defineren in een object
+gse <- getGEO("GSE169757")
+
+# Defineren van de specifieke kolom met alle namen
+gse_groups_column <- gse[[1]]@phenoData@data$characteristics_ch1.1
+
+# Lege vector om de uiteindelijke namen in op te slaan
+all_modified_group_names <- c()
+
+# Het door lopen van alle kolomnamen en het opzoeken van de namen.
+# Allereerst worden de indexen verkregen van alle namen
+# Met die indexen worden de juiste namen eruit gehaald.
+for (name in names(data[,9:ncol(data)])) {
+  name <- gsub("\\.", "-", name)
+  all_group_names <- gse_groups_column[which(gse[[1]]@phenoData@data$title %in% name)]
+  group_names <- strsplit(all_group_names, ": ")[[1]][2]
+  all_modified_group_names <- c(all_modified_group_names, group_names)
+}
+
+# Uniek maken door een getal erachter te zetten.
+unique_group_names <- make.unique(all_modified_group_names, sep = "_")
+
+# Het veranderen van de kolom namen in de data
+names(data)[9:ncol(data)] <- unique_group_names
+```
+
+### Eerste kijk op data
+
+Nu de data goed is ingeladen met alle juiste namen kunnen we kijken hoe het precies er uit ziet. Ook kunnen we kijken wat het precieze aantal rijen en kolommen zijn, ook wel de dimenties. 
+
+```{r}
+library(pander)
+pander(head(data[1:4, c(1, 2, 8, 9, 10, 11)]))
+```
+
+```{r}
+dims <- dim(data)
+sprintf("Aantal rijen: %.f en aantal kolommen: %.f", dims[1], dims[2])
+```
+
+We weten nu hoe de data eruit ziet en hoe groot het precies is. Vanaf kolom nummer negen beginnen de 'samples'. De samples staan dus niet onder elkaar, maar naast elkaar. 
+
+### Classificatie van variabelen
+
+Omdat we niet de hele tijd willen opzoeken welke kolomnummers bij welke groep hoeren, gaan we dit defineren. Op deze manier kunnen we makkelijk een variabel invullen om vervolgens snel alle data van de bijhorende groep te krijgen. 
+
+```{r}
+smoker <- grep("Smoker", names(data))
+vaper <- grep("Vaper", names(data))
+control <- grep("Control", names(data))
+```
+
+> Grep() geeft de nummers van kolommen terug waar het woord in voorkomt. 
+
+## Verdeling van de data
+
+De groepen zijn nu geclassificeerd en we kunnen dus kijken hoe de data is verdeeld. We kunnen het duidelijk weergeven op twee manieren. Allereerst een boxplot. Als de boxen van de figuren allemaal rond een lijn zitten, is de data goed dicht bij elkaar. Echter zal het met zo'n grote dataset nooit helemaal duidelijk verdeeld zijn. Er zijn bijvoorbeeld bij elke sample heel veel nullen aanwezig. Deze nullen 'trekken' de andere waren behoorlijk naar beneden. De boxplot heeft geen details meer en zegt dan niks meer.
+
+Om dit probleem op te lossen, moeten we alle waarden met 0 'wegfilteren'. Dit is makkelijk te doen met een log2 transformatie. Het bereik tussen de samples wordt op deze manier kleiner. De waarden met 0 domineren minder in de data.
+
+Onderstaand de boxplot van de controle groep, met getransformeerde data.
+
+```{r}
+boxplot(log2(data[control] + 1), las = 2, col = "#83A3EE", main = "log2 transformatie van de verdeling van de control groep", ylab = "Aantal RNA")
+```
+
+Zoals je kunt zien op het figuur liggen alle boxen behoorlijk dicht bij elkaar. Je zou dus zeggen dat deze data goed is verdeeld. Echter is dit nog maar een simpele log2 transformatie en kunnen we dus nog verder kijken naar normalisatie.
+
+Een andere manier om uitschieters in de data weer te geven is een dichtheids grafiek. Dit plot geeft ook de verdeling van de data weer. Als alle lijnen van de grafiek op elkaar liggen, is de data goed verdeeld. Eventuele uitschieters zijn goed zichtbaar.
+
+```{r}
+library(affy)
+plotDensity(log2(data[9:ncol(data)] + 0.05),
+main = "Dichtheidsplot van alle data samples",
+ylab = "Dichtheid")
+abline(v = -2, col = "red", lwd = 1, lty = 1)
+```
+
+Zoals je kunt zien zit er een hele groot piek links van de rode lijn. Zoals eerder opgemerkt bevat de data heel veel nullen. De data is getransformeerd. De log2 van 0.05 is ~ -4.3. Deze piek zijn dus alle waarden met nul en kunnen genegeerd worden (daarom is er om die reden ook een rode lijn geplaatst).
+
+In de figuur is op twee plekken een duidelijk ander verloop te zien. Aan het begin en aan het einde van de stijging is andere verloop tussen de samples. Hier is de data dus niet helemaal gelijk verdeeld. Na het normaliseren van de data is het mogelijk om eventuele afwijkende samples weg te gooien, om deze uitschieters eruit te filteren.
+
+## Normalisatie van de data en de afstand tussen de samples
+
+Om zoveel mogelijk ruis uit de data te halen is het mogelijk om te normaliseren. Onderstaand zal er een simpele normalisatie worden uitgevoerd met het DESeq2 pakket. De meest basale vorm van normalisatie wordt toegepast.
+
+```{r}
+library('DESeq2')
+
+(ddsMat <- DESeqDataSetFromMatrix(countData = data[9:ncol(data)],
+colData = data.frame(samples = names(data[9:ncol(data)])),
+design = ~ 1))
+
+# uitvoeren van de normalisatie
+rld.dds <- vst(ddsMat)
+# waarden ophalen
+rld <- assay(rld.dds)
+```
+
+Nu de data genormaliseerd is kunnen we de afstand berekenen tussen de samples om aan te tonen hoever de data bij elkaar is. Deze afstanden kunnen we weergeven in een heatmap.
+
+```{r}
+sampledists <- dist(rld)
+# We use the 'pheatmap' library (install with install.packages('pheatmap'))
+library(pheatmap)
+# Convert the 'dist' object into a matrix for creating a heatmap
+sampleDistMatrix <- as.matrix(sampledists)
+pheatmap(sampleDistMatrix, show_colnames = FALSE,
+clustering_distance_rows = sampledists,
+clustering_distance_cols = sampledists,
+cluster_rows = F,
+cluster_cols = F,
+main = "Sample Distances")
+```
+
+In de heatmap.......
+
+Op de data kunnen we ook multi-dimensionale schaling (MDS) toepassen. Dit is vergelijkbaar met de heatmap, maar hierbij worden de afstanden op een andere manier berekend. Ook worden ze 2d weergegeven. Bij MDS wordt Poisson afstandsberekening toegepast.
+
+```{r}
+library('PoiClaClu')
+# Note: uses the raw-count data, PoissonDistance performs normalization
+# set by the 'type' parameter (uses DESeq)
+dds <- assay(ddsMat)
+poisd <- PoissonDistance( t(dds), type = "deseq")
+# Extract the matrix with distances
+samplePoisDistMatrix <- as.matrix(poisd$dd)
+# Calculate the MDS and get the X- and Y-coordinates
+mdsPoisData <- data.frame( cmdscale(samplePoisDistMatrix) )
+
+# And set some better readable names for the columns
+names(mdsPoisData) <- c('x_coord', 'y_coord')
+```
+
+En natuurlijk het maken van de grafiek.
+
+```{r}
+coldata <- names(counts)
+myColors <- c("red", "blue", "green")
+plot(mdsPoisData, col=rep(myColors, each=3), pch=20, lwd=2)
+legend(x=-20000, y=11000, legend = levels(groups), col=myColors, pch=20)
+
+```
+
+In de grafiek.....
