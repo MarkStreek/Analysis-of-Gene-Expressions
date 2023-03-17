@@ -8,6 +8,15 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(cache = TRUE)
+
+# Het inladen van de librarys
+library(GEOquery)
+library(pander)
+library(affy)
+library('ggplot2')
+library('PoiClaClu')
+library(pheatmap)
+library('DESeq2')
 ```
 
 # Gen expressie Logboek
@@ -53,8 +62,7 @@ data <- read.table("GSE169757_Partek_Hum_BC_RNA_Jan2018_UnfilteredCounts_82.txt"
 ```
 
 ```{r}
-# Het inladen van de library
-library(GEOquery)
+Sys.setenv(VROOM_CONNECTION_SIZE=50007200)
 
 # Opzoeken van het ID en defineren in een object
 gse <- getGEO("GSE169757")
@@ -87,7 +95,6 @@ names(data)[9:ncol(data)] <- unique_group_names
 Nu de data goed is ingeladen met alle juiste namen kunnen we kijken hoe het precies er uit ziet. Ook kunnen we kijken wat het precieze aantal rijen en kolommen zijn, ook wel de dimenties. 
 
 ```{r}
-library(pander)
 pander(head(data[1:4, c(1, 2, 8, 9, 10, 11)]))
 ```
 
@@ -143,10 +150,12 @@ In de figuur is op twee plekken een duidelijk ander verloop te zien. Aan het beg
 Om zoveel mogelijk ruis uit de data te halen is het mogelijk om te normaliseren. Onderstaand zal er een simpele normalisatie worden uitgevoerd met het DESeq2 pakket. De meest basale vorm van normalisatie wordt toegepast.
 
 ```{r}
-library('DESeq2')
+for (cols in names(data[9:ncol(data)])) {
+  data[[cols]] <- as.integer(data[[cols]])
+}
 
-(ddsMat <- DESeqDataSetFromMatrix(countData = data[9:ncol(data)],
-colData = data.frame(samples = names(data[9:ncol(data)])),
+(ddsMat <- DESeqDataSetFromMatrix(countData = data[c(smoker, control, vaper)],
+colData = data.frame(samples = names(data[c(smoker, control, vaper)])),
 design = ~ 1))
 
 # uitvoeren van de normalisatie
@@ -158,25 +167,32 @@ rld <- assay(rld.dds)
 Nu de data genormaliseerd is kunnen we de afstand berekenen tussen de samples om aan te tonen hoever de data bij elkaar is. Deze afstanden kunnen we weergeven in een heatmap.
 
 ```{r}
-sampledists <- dist(rld)
+sampledists <- dist(t(rld))
 # We use the 'pheatmap' library (install with install.packages('pheatmap'))
-library(pheatmap)
 # Convert the 'dist' object into a matrix for creating a heatmap
 sampleDistMatrix <- as.matrix(sampledists)
+
+
+annotation <- data.frame(Cell = factor(c(rep(1, length(smoker)), rep(2, length(control)), rep(3, length(vaper))), 
+                                          labels = c("Smoker", "Control", "Vaper")))
+
+rownames(annotation) <- names(data[c(smoker, control, vaper)])
+
 pheatmap(sampleDistMatrix, show_colnames = FALSE,
 clustering_distance_rows = sampledists,
 clustering_distance_cols = sampledists,
-cluster_rows = F,
-cluster_cols = F,
+annotation_col = annotation,
+cex = .5,
 main = "Sample Distances")
 ```
 
-In de heatmap.......
+Door de vele aanwezige samples is de heatmap zeer lastig af te lezen. Wel kun je mooi zien dat de eerste vier samples verder wegliggen dan de andere samples. Het is echter lastig om hier meer over te vertellen, omdat er zoveel samples aanwezig zijn. 
 
-Op de data kunnen we ook multi-dimensionale schaling (MDS) toepassen. Dit is vergelijkbaar met de heatmap, maar hierbij worden de afstanden op een andere manier berekend. Ook worden ze 2d weergegeven. Bij MDS wordt Poisson afstandsberekening toegepast.
+## Multi-dimensionele schaling (MDS)
+
+Op de data kunnen we ook multi-dimensionale schaling (MDS) toepassen. Dit is vergelijkbaar met de heatmap, maar hierbij worden de afstanden op een andere manier berekend. Ook worden ze 2d weergegeven. Bij MDS wordt Poisson afstandsberekening toegepast. Er wordt gekeken welke genen bij elkaar horen. De genen die bij elkaar horen, vormen een groepje in de grafiek.
 
 ```{r}
-library('PoiClaClu')
 # Note: uses the raw-count data, PoissonDistance performs normalization
 # set by the 'type' parameter (uses DESeq)
 dds <- assay(ddsMat)
@@ -193,11 +209,34 @@ names(mdsPoisData) <- c('x_coord', 'y_coord')
 En natuurlijk het maken van de grafiek.
 
 ```{r}
-coldata <- names(counts)
-myColors <- c("red", "blue", "green")
-plot(mdsPoisData, col=rep(myColors, each=3), pch=20, lwd=2)
-legend(x=-20000, y=11000, legend = levels(groups), col=myColors, pch=20)
+groups <- factor(c(rep(1, length(smoker)), rep(2, length(control)), rep(3, length(vaper))), 
+                                          labels = c("Smoker", "Control", "Vaper"))
+
+coldata <- names(data[c(smoker, control, vaper)])
+ggplot(mdsPoisData, aes(x_coord, y_coord, color = groups, label = coldata)) + 
+  geom_text(size = 4) +
+  ggtitle('Multi Dimensional Scaling') +
+  labs(x = "Poisson Distance", y = "Poisson Distance") +
+ theme_bw()
 
 ```
 
-In de grafiek.....
+Zoals je kunt zien zijn er heel veel samples die verspreid zijn. Er zijn niet echt groepen. Toch kun je duidelijk zien dat de groepen vaper en control samen een groep vormen met blauw en groen. Er zijn van de rokers groep wel een aantal samples die ook in de groep vallen, maar dat zijn er niet veel. Ook vertoond de rokers groep behoorlijke individuele afwijkingen. 
+
+## Differentieel tot expressie gebrachte genen (DEG's)
+
+Het uiteindelijke doel is om genen te vinden die afwijken van de 'normale' genen. Het is ook belangrijk om genen te vinden die ook significant verschillen van de normaal. Hiervoor gaan we testen uitvoeren. Echter zijn de testen heel erg gevoelig voor buitenliggende waarden. Om deze reden voeren we nog een normalisatie uit, maar dan op een andere manier. We kunnen altijd later nog makklijk samples verwijderen en we kunnen daarom voor de zekerheid zoveel mogelijk visualitaties hebben om dit goed te onderbouwen. 
+
+We gaan de data normaliseren door middel van de counts per miljoen. Het aantal counts wordt berekend per miljoen. Deze data transformeren we vervolgens met de log2.
+
+```{r}
+#counts.fpm <- log2( (counts / (colSums(counts) / 1e6)) + 1 )
+```
+
+
+
+
+
+
+
+

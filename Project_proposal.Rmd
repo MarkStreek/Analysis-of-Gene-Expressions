@@ -1,0 +1,67 @@
+---
+title: "Project Proposal"
+author: "Mark van de Streek"
+date: "`r Sys.Date()`"
+output: pdf_document
+toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+# Gen expressie van leukocyten bij mensen die roken.
+
+## Het onderzoek
+
+In het onderzoek is er gekeken naar onder meer gen expressie van leukocyten bij verschillende groepen mensen. De groepen mensen zijn:
+
+-   Vapers (mensen die een elektronische sigaret roken)
+-   Mensen die de traditionele sigaret roken
+-   Mensen die geen tabaksproducten gebruiken
+
+De onderzoekers hebben vervolgens een aantal modelleringen uitgevoerd op de ruwe data die verkgregen was van de personen. De modellen werden allemaal gemaakt in Rstudio met behulp van een aantal paketten.
+
+Om mensen te verkrijgen voor het onderzoek werd er om te beginnen een online vragenlijst gemaakt. Voor deze vragenlijst werd online reclame gemaakt op bijvoorbeeld, Reddit en Twitter. Aan de hand van de deze vragenlijst werden de mensen die geschikt leken voor het onderzoek uitgenodigd voor een gesprek. In dit gepsprek werden nog een aantal vragen en checklists gemaakt om er zeker van te zijn dat de persoon geschikt is voor het onderzoek.
+
+Uit de resultaten bleek dat de mensen die op dit moment Vapen, maar vroger niet rookten, een significant andere genregulatie hebben ten opzichte van mensen uit de controle groep. Ook mitochondriale genen en immuunresponsgenen waren significant ontregeld.
+
+[Klik hier om het artikel te lezen die bij het onderzoek hoort.](https://pubmed.ncbi.nlm.nih.gov/34815430/)
+
+## De groep verdeling
+
+In alle verschillende groepen waren een aantal mensen die voor het onerzoek werden gebruikt. Onderstaand de aantallen in een kleine tabel.
+
+| Vapers | Traditionele rokers | Niet-rokers |
+|--------|---------------------|-------------|
+| 37     | 22                  | 23          |
+
+: Aantal mensen per groep
+
+Er werd bij de deelnemers ook gekeken naar geslacht, leeftijd, etniciteit, rassen en ook naar mensen die kunnen lezen en schrijven in het Engels. Het onderzoek vond plaats in Los Angeles. 
+
+De opzet van het onderzoek was om de verschillen tussen alle drie de groepen duidelijk weer te geven. In vele eerdere onderzoeken werden vaak deelnemers gekozen die vapen, maar vaak met een geschiedenis in andere rookgewoonten. Er namen dus mensen deel aan het onderzoek die eerder traditionele sigaretten rookten en op latere tijd zijn overgestapt naar elektronische sigaretten. 
+
+De groep die werd geclassificeerd als vapers in dit onderzoek heeft in de 6 maanden voor het onderzoek geen traditionele sigaret gebruikt. De onderzoekers hebben bewust voor een periode van 'maar' 6 maanden gekozen, omdat de elektronische sigaret nog niet zo heel lang bestaat. door het kiezen van een periode van 6 maanden, zijn er meer mensen die deel konden nemen aan het onderzoek. Voor de traditionele rokers groep werd een periode van 1 jaar gebruikt voor deelname. 
+
+Met behulp van bioinformatische bevindingen zijn in dit onderzoek onderscheid gemaakt tussen gezonde volwassen vapers, met en zonder geschiedenis van roken, en 'exclusieve' sigaretten rokers. Ook is specifiek de expressie van genen in rokers (zowel e-sigaret als traditionele rokers) vergeleken met niet-rokers.
+
+## Plan voor mijn eigen onderzoek
+
+Een bijzonder resultaat van het onderzoek wat ik eigenlijk helemaal niet wist is de beschadiging van de mitochondriën. De meeste DEG's werden gevonden in mitochondriale genen, die zijn sterk geassocieerd met mitochondriale aandoeningen. Zowel vapen als roken is gekoppeld aan een verhoogde depolarisatie en beschadiging aan de mitochondriën. Omdat deze stap mij opviel, wil ik hier nog nader naar kijken. Op de afbeelding die zichtbaar is bij de resultaten van het onderzoek, staat een kleine staafdiagram waar de verhoogde kans op aandoeningen worden vergeleken tussen vapers en rokers. Het verschil is niet extreem groot tussen beide groepen, maar bij traditionele rokers is het vaker wel (iets) groter. Dit figuur wil ik namaken om te kijken of ik het zelfde resultaat krijg met mijn anders bewerkte data. 
+
+Graag zou ik nog willen kijken of ik de genen van niek-rokers kan meenemen in de figuren, zodat het echt duidelijk wordt hoeveel genen nou 'echt' bijdragen aan de aandoeningen voor rokers. Uit de resultaten bleek dat het aantal DEG's bij traditionele rokers ongeveer ~7.4 keer hoger was dan bij vapers. Ik wil ook graag iets dieper kijken naar de DEG' in vapers, want in vele onderzoeken is er al gekeken naar normale rokers. Uiteraard is het nog niet zeker of dit überhaupt wel kan met de data die ik heb. Als ik een extra figuur wil maken, moet het natuurlijk wel echt iets toelichten.
+
+## Software
+
+Het trimmen, alignen en kwantificeren van de RNA-seq dat is uitgevoerd met __Partek Flow__, version 8.0.19.1027. voor het alignen werd referentie genoom hg38 gebruikt. Alle post-alignment processen, het kwantificeren en alle analysis zijn uitgevoerd met __R__. Voor het transformeren van RNA-seq dat werd __LimmaVoom__ gebruikt. LimmaVoom is een pakket in R. 
+
+## Data
+
+In de data zit de volgende informatie: chromosome, start- en stop-positie, streng, gen symbool/gen naam, havana gen en natuurlijk de samples. Van elke sample is dus meer informatie op te zoeken dan simpelweg alleen de telwaarde. De havana gen kolom is een kolom die unieke waardes bevat die verwijzen naar een specifiek gen, dat op een specifieke locatie op het menselijk genoom ligt. De waardes zijn geannoteerd door het HAVANA-project, om genen, exonen, etc. op het menselijk genoom te identificeren. 
+
+Onderstaand een klein overzicht van de eerste paar regels van de data.
+
+![Overzicht van de data]("~/Desktop/Screenshot 2023-02-24 at 10.37.34")
+

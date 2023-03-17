@@ -1,0 +1,131 @@
+---
+title: "Project_logboek_Genexpressie"
+author: "Mark van de Streek"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+# Gen expressie Logboek
+
+In dit logboek wordt een onderzoek uitgelicht naar het roken van sigaretten en de elektronische sigaret, ook wel de vape genoemd. In het onderzoek is gebruikt gemaakt van RNA-seq data. Er is dus gekeken naar expressie van bepaalde genen. Om precies te zijn is er gekeken naar genen die aanwezig zijn in leukocyten (witte bloedcellen).
+
+## Het onderzoek 
+
+Er is gekeken naar de activiteit van genen van de volgende groepen mensen:
+
+-   Vapers (mensen die een elektronische sigaret roken)
+-   Mensen die de traditionele sigaret roken
+-   Mensen die geen tabaksproducten gebruiken
+
+Om mensen te verkrijgen voor het onderzoek werd er om te beginnen een online vragenlijst gemaakt. Vervolgens werd er voor deze vragenlijst reclame gemaakt online, op bijvoorbeeld Reddit en Twitter. Aan de hand van de deze vragenlijst werden de mensen die geschikt leken voor het onderzoek uitgenodigd voor een gesprek. In dit gepsprek werden nog een aantal vragen en checklists gemaakt om er zeker van te zijn dat de persoon geschikt is voor het onderzoek.
+
+Uit de resultaten bleek dat de mensen die op dit moment Vapen, maar vroger niet rookten, een significant andere genregulatie hebben ten opzichte van mensen uit de controle groep. Ook mitochondriale genen en immuunresponsgenen waren significant ontregeld.
+
+### Verdeling van de groepen
+
+In alle verschillende groepen waren een aantal mensen die voor het onerzoek werden gebruikt. Onderstaand de aantallen in een kleine tabel.
+
+| Vapers | Traditionele rokers | Niet-rokers |
+|--------|---------------------|-------------|
+| 37     | 21                  | 24          |
+
+: Aantal mensen per groep
+
+Er werd bij de deelnemers ook gekeken naar geslacht, leeftijd, etniciteit, rassen en ook naar mensen die kunnen lezen en schrijven in het Engels. Het onderzoek vond plaats in Los Angeles. 
+
+De opzet van het onderzoek was om de verschillen tussen alle drie de groepen duidelijk weer te geven. In vele eerdere onderzoeken werden vaak deelnemers gekozen die vapen, maar vaak met een geschiedenis in andere rookgewoonten. Er namen dus mensen deel aan het onderzoek die eerder traditionele sigaretten rookten en op latere tijd zijn overgestapt naar elektronische sigaretten. 
+
+De groep die werd geclassificeerd als vapers in dit onderzoek heeft in de 6 maanden voor het onderzoek geen traditionele sigaret gebruikt. De onderzoekers hebben bewust voor een periode van 'maar' 6 maanden gekozen, omdat de elektronische sigaret nog niet zo heel lang bestaat. door het kiezen van een periode van 6 maanden, zijn er meer mensen die deel konden nemen aan het onderzoek. Voor de traditionele rokers groep werd een periode van 1 jaar gebruikt voor deelname. 
+
+Met behulp van bioinformatische bevindingen zijn in dit onderzoek onderscheid gemaakt tussen gezonde volwassen vapers, met en zonder geschiedenis van roken, en 'exclusieve' sigaretten rokers. Ook is specifiek de expressie van genen in rokers (zowel e-sigaret als traditionele rokers) vergeleken met niet-rokers.
+
+## Inladen van de Data
+
+```{r}
+setwd("/homes/mvandestreek/HANZEHOGESCHOOL GRONINGEN/2022-2023/thema07/gene_expression_analysis")
+data <- read.table("GSE169757_Partek_Hum_BC_RNA_Jan2018_UnfilteredCounts_82.txt", header = T, sep = "\t")
+```
+
+```{r}
+# Het inladen van de library
+library(GEOquery)
+Sys.setenv(VROOM_CONNECTION_SIZE=50007200)
+
+# Opzoeken van het ID en defineren in een object
+gse <- getGEO("GSE169757")
+
+# Defineren van de specifieke kolom met alle namen
+gse_groups_column <- gse[[1]]@phenoData@data$characteristics_ch1.1
+
+# Lege vector om de uiteindelijke namen in op te slaan
+all_modified_group_names <- c()
+
+# Het door lopen van alle kolomnamen en het opzoeken van de namen.
+# Allereerst worden de indexen verkregen van alle namen
+# Met die indexen worden de juiste namen eruit gehaald.
+for (name in names(data[,9:ncol(data)])) {
+  name <- gsub("\\.", "-", name)
+  all_group_names <- gse_groups_column[which(gse[[1]]@phenoData@data$title %in% name)]
+  group_names <- strsplit(all_group_names, ": ")[[1]][2]
+  all_modified_group_names <- c(all_modified_group_names, group_names)
+}
+
+# Uniek maken door een getal erachter te zetten.
+unique_group_names <- make.unique(all_modified_group_names, sep = "_")
+
+# Het veranderen van de kolom namen in de data
+names(data)[9:ncol(data)] <- unique_group_names
+```
+
+Nu de data goed is ingeladen en het duidelijk is welke samples bij elkaar horen, kunnen we beginnen met het kijken naar de data. Onderstaand worden de eerste paar regels van de data getoond (en een selectie van een aantal kolommen). Ook worden de dimensies van de data weergegeven.
+
+```{r}
+library(pander)
+pander(head(data[1:4,c(6,9:15)]))
+```
+
+```{r}
+dimensions <- dim(data)
+sprintf("Rows: %.f and Columns: %.f", dimensions[1], dimensions[2])
+```
+
+Nu het duidelijk is hoe de data er uit ziet en wat de dimensies zijn, kunnen we de kolommen van de groepen classificeren in smoker, vaper en control. We kunnen deze variabelen later gebruiken om snel de vergelijking tussen de groepen te maken.
+
+```{r}
+smoker <- grep("Smoker", names(data))
+vaper <- grep("Vaper", names(data))
+control <- grep("Control", names(data))
+
+#data <- data[c(1:8, 9, 11, 12, 13, 18, 19, 21, 22, 25, 29, 31, 32, 33, 39, 49, 52, 54, 61, 63, 71, 73, 75, 77, 88, 10, 15, 28, 30, 34, 35, 36, 38, 40, 43, 47, 55, 56, 60, 66, 67, 70, 78, 79, 89, 90, 14, 16, 17, 20, 23, 24, 26, 27, 37, 41, 42, 44, 45, 46, 48, 50, 51, 53, 57, 58, 59, 62, 64, 65, 68, 69, 72, 74, 76, 80, 81, 82, 83, 84, 85, 86, 87)]
+```
+
+
+## Boxplot van de data
+
+Met de gedefineerde groepen kunnen we het eerste plot gaan maken om te kijken hoe de verdeling van de data is. Onderstaand een boxplot van de smoker-groep. Omdat de data een groot, uiteenlopend bereik heeft, is het getransformeerd met de 2log. Dit omdat je anders niks kunt aflezen door de boxplotten die naar beneden worden getrokken door alle nullen. De +1 in de transformatie is om alle getallen met 0 niet oneindig te laten worden, want log2(0) is ongedefineerd.
+
+```{r}
+boxplot(log2(data[smoker] + 1), las = 2, col = "#83A3EE", main = "log2 transformatie van de verdeling van de control groep", ylab = "Aantal RNA moleculen")
+```
+
+Zoals je kunt zien zijn de boxplots nu allemaal zichtbaar. Wel valt het op dat er hier en daar nog wat uitschieters zijn. Op het eerste oog is dat natuurlijk nog niet te verklaren. Omdat het toch allemaal verschillende personen zijn, is het  niet gek dat de data iets "uitschiet". Na het normaliseren wordt het wellicht nog duidelijker.
+
+## Dichtheidsplot van de data
+
+Het is met een dichtheidsplot van de log2 transformatie van de data ook mogelijk om de verdeling van alle data weer te geven. Onderstaand figuur laat de verdeling zien. De lijnen die afwijkingen van alle andere lijnen, hebben een andere verdeling. Dit kan dus bijvoorbeeld een proefpersoon zijn waar het experiment niet helemaal goed is uitgevoerd. Het gedeelte links van de rode lijn kan genegeerd worden.
+
+```{r}
+#library(affy)
+plotDensity(log2(data[9:ncol(data)] + 0.05), 
+            main = "Dichtheidsplot van alle data samples",
+            ylab = "Dichtheid")
+
+abline(v = -2, col = "red", lwd = 1, lty = 1)
+```
+
+Op het eerste oog lijkt de data behoorlijk "bij elkaar" te liggen na een log2 transformatie. Wel valt het op dat zowel het begin- als het einde van de piek een hoger bereik heeft dan in het midden. 
