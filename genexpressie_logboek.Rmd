@@ -58,7 +58,7 @@ Met behulp van bioinformatische bevindingen zijn in dit onderzoek onderscheid ge
 Onderstaand wordt de data van het bestand ingeladen. Helaas is er in het bestand nog niet duidelijk welke samples precies bij welke groep horen. Vandaar dat er nog een aantal stappen moeten worden uitgevoerd om de juiste namen bij de juiste samples te krijgen. 
 
 ```{r}
-data <- read.table("GSE169757_Partek_Hum_BC_RNA_Jan2018_UnfilteredCounts_82.txt", header = T, sep = "\t")
+data <- read.table("data/GSE169757_Partek_Hum_BC_RNA_Jan2018_UnfilteredCounts_82.txt", header = T, sep = "\t")
 ```
 
 ```{r}
@@ -134,7 +134,6 @@ Zoals je kunt zien op het figuur liggen alle boxen behoorlijk dicht bij elkaar. 
 Een andere manier om uitschieters in de data weer te geven is een dichtheids grafiek. Dit plot geeft ook de verdeling van de data weer. Als alle lijnen van de grafiek op elkaar liggen, is de data goed verdeeld. Eventuele uitschieters zijn goed zichtbaar.
 
 ```{r}
-library(affy)
 plotDensity(log2(data[9:ncol(data)] + 0.05),
 main = "Dichtheidsplot van alle data samples",
 ylab = "Dichtheid")
@@ -227,13 +226,24 @@ Zoals je kunt zien zijn er heel veel samples die verspreid zijn. Er zijn niet ec
 
 Het uiteindelijke doel is om genen te vinden die afwijken van de 'normale' genen. Het is ook belangrijk om genen te vinden die ook significant verschillen van de normaal. Hiervoor gaan we testen uitvoeren. Echter zijn de testen heel erg gevoelig voor buitenliggende waarden. Om deze reden voeren we nog een normalisatie uit, maar dan op een andere manier. We kunnen altijd later nog makklijk samples verwijderen en we kunnen daarom voor de zekerheid zoveel mogelijk visualitaties hebben om dit goed te onderbouwen. 
 
-We gaan de data normaliseren door middel van de counts per miljoen. Het aantal counts wordt berekend per miljoen. Deze data transformeren we vervolgens met de log2.
+We gaan de data normaliseren door middel van de counts per miljoen. Het aantal counts wordt berekend per miljoen. Deze data transformeren we vervolgens met de log2. Eerder keken we nog naar de lengte van de genen, maar nu kijken we puur alleen naar het aantal counts.
 
 ```{r}
-#counts.fpm <- log2( (counts / (colSums(counts) / 1e6)) + 1 )
+counts.fpm <- log2( (data[vaper] / (colSums(data[c(smoker, control, vaper)]) / 1e6)) + 1 )
+plotDensity(counts.fpm,
+main = "Dichtheidsplot van alle data samples",
+ylab = "Dichtheid")
+abline(v = .75, col = "red", lwd = 1, lty = 1)
 ```
 
+Als we het vergelijken met het dichtheidsplot van de andere genormaliseerde data zou je zeggen dat dit velen malen beter is. De data lijkt nu ook velen malen beter verdeeld. Echter is dit maar één soort grafiek. We kunnen dus aan de hand van deze data niet te veel conclusies trekken.
 
+
+
+```{r}
+new_data <- data[rowSums(data[9:ncol(data)] == 0) <= ncol(data[9:ncol(data)]) * 0.25,]
+dim(new_data)
+```
 
 
 
