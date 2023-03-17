@@ -32,7 +32,7 @@ In alle verschillende groepen waren een aantal mensen die voor het onerzoek werd
 
 | Vapers | Traditionele rokers | Niet-rokers |
 |--------|---------------------|-------------|
-| 37     | 21                  | 24          |
+| 37     | 22                  | 23          |
 
 : Aantal mensen per groep
 
@@ -46,15 +46,17 @@ Met behulp van bioinformatische bevindingen zijn in dit onderzoek onderscheid ge
 
 ## Inladen van de Data
 
+Onderstaand wordt de data van het bestand ingeladen. Helaas is er in het bestand nog niet duidelijk welke samples precies bij welke groep horen. Vandaar dat er nog een aantal stappen moeten worden uitgevoerd om de juiste namen bij de juiste samples te krijgen. 
+
 ```{r}
-setwd("/homes/mvandestreek/HANZEHOGESCHOOL GRONINGEN/2022-2023/thema07/gene_expression_analysis")
 data <- read.table("GSE169757_Partek_Hum_BC_RNA_Jan2018_UnfilteredCounts_82.txt", header = T, sep = "\t")
 ```
 
 ```{r}
 # Het inladen van de library
 library(GEOquery)
-Sys.setenv(VROOM_CONNECTION_SIZE=50007200)
+
+Sys.setenv("VROOM_CONNECTION_SIZE" = 560000)
 
 # Opzoeken van het ID en defineren in een object
 gse <- getGEO("GSE169757")
@@ -82,50 +84,123 @@ unique_group_names <- make.unique(all_modified_group_names, sep = "_")
 names(data)[9:ncol(data)] <- unique_group_names
 ```
 
-Nu de data goed is ingeladen en het duidelijk is welke samples bij elkaar horen, kunnen we beginnen met het kijken naar de data. Onderstaand worden de eerste paar regels van de data getoond (en een selectie van een aantal kolommen). Ook worden de dimensies van de data weergegeven.
+### Eerste kijk op data
+
+Nu de data goed is ingeladen met alle juiste namen kunnen we kijken hoe het precies er uit ziet. Ook kunnen we kijken wat het precieze aantal rijen en kolommen zijn, ook wel de dimenties. 
 
 ```{r}
 library(pander)
-pander(head(data[1:4,c(6,9:15)]))
+pander(head(data[1:4, c(1, 2, 8, 9, 10, 11)]))
 ```
 
 ```{r}
-dimensions <- dim(data)
-sprintf("Rows: %.f and Columns: %.f", dimensions[1], dimensions[2])
+dims <- dim(data)
+sprintf("Aantal rijen: %.f en aantal kolommen: %.f", dims[1], dims[2])
 ```
 
-Nu het duidelijk is hoe de data er uit ziet en wat de dimensies zijn, kunnen we de kolommen van de groepen classificeren in smoker, vaper en control. We kunnen deze variabelen later gebruiken om snel de vergelijking tussen de groepen te maken.
+We weten nu hoe de data eruit ziet en hoe groot het precies is. Vanaf kolom nummer negen beginnen de 'samples'. De samples staan dus niet onder elkaar, maar naast elkaar. 
+
+### Classificatie van variabelen
+
+Omdat we niet de hele tijd willen opzoeken welke kolomnummers bij welke groep hoeren, gaan we dit defineren. Op deze manier kunnen we makkelijk een variabel invullen om vervolgens snel alle data van de bijhorende groep te krijgen. 
 
 ```{r}
 smoker <- grep("Smoker", names(data))
 vaper <- grep("Vaper", names(data))
 control <- grep("Control", names(data))
-
-#data <- data[c(1:8, 9, 11, 12, 13, 18, 19, 21, 22, 25, 29, 31, 32, 33, 39, 49, 52, 54, 61, 63, 71, 73, 75, 77, 88, 10, 15, 28, 30, 34, 35, 36, 38, 40, 43, 47, 55, 56, 60, 66, 67, 70, 78, 79, 89, 90, 14, 16, 17, 20, 23, 24, 26, 27, 37, 41, 42, 44, 45, 46, 48, 50, 51, 53, 57, 58, 59, 62, 64, 65, 68, 69, 72, 74, 76, 80, 81, 82, 83, 84, 85, 86, 87)]
 ```
 
+> Grep() geeft de nummers van kolommen terug waar het woord in voorkomt. 
 
-## Boxplot van de data
+## Verdeling van de data
 
-Met de gedefineerde groepen kunnen we het eerste plot gaan maken om te kijken hoe de verdeling van de data is. Onderstaand een boxplot van de smoker-groep. Omdat de data een groot, uiteenlopend bereik heeft, is het getransformeerd met de 2log. Dit omdat je anders niks kunt aflezen door de boxplotten die naar beneden worden getrokken door alle nullen. De +1 in de transformatie is om alle getallen met 0 niet oneindig te laten worden, want log2(0) is ongedefineerd.
+De groepen zijn nu geclassificeerd en we kunnen dus kijken hoe de data is verdeeld. We kunnen het duidelijk weergeven op twee manieren. Allereerst een boxplot. Als de boxen van de figuren allemaal rond een lijn zitten, is de data goed dicht bij elkaar. Echter zal het met zo'n grote dataset nooit helemaal duidelijk verdeeld zijn. Er zijn bijvoorbeeld bij elke sample heel veel nullen aanwezig. Deze nullen 'trekken' de andere waren behoorlijk naar beneden. De boxplot heeft geen details meer en zegt dan niks meer.
+
+Om dit probleem op te lossen, moeten we alle waarden met 0 'wegfilteren'. Dit is makkelijk te doen met een log2 transformatie. Het bereik tussen de samples wordt op deze manier kleiner. De waarden met 0 domineren minder in de data.
+
+Onderstaand de boxplot van de controle groep, met getransformeerde data.
 
 ```{r}
-boxplot(log2(data[smoker] + 1), las = 2, col = "#83A3EE", main = "log2 transformatie van de verdeling van de control groep", ylab = "Aantal RNA moleculen")
+boxplot(log2(data[control] + 1), las = 2, col = "#83A3EE", main = "log2 transformatie van de verdeling van de control groep", ylab = "Aantal RNA")
 ```
 
-Zoals je kunt zien zijn de boxplots nu allemaal zichtbaar. Wel valt het op dat er hier en daar nog wat uitschieters zijn. Op het eerste oog is dat natuurlijk nog niet te verklaren. Omdat het toch allemaal verschillende personen zijn, is het  niet gek dat de data iets "uitschiet". Na het normaliseren wordt het wellicht nog duidelijker.
+Zoals je kunt zien op het figuur liggen alle boxen behoorlijk dicht bij elkaar. Je zou dus zeggen dat deze data goed is verdeeld. Echter is dit nog maar een simpele log2 transformatie en kunnen we dus nog verder kijken naar normalisatie.
 
-## Dichtheidsplot van de data
-
-Het is met een dichtheidsplot van de log2 transformatie van de data ook mogelijk om de verdeling van alle data weer te geven. Onderstaand figuur laat de verdeling zien. De lijnen die afwijkingen van alle andere lijnen, hebben een andere verdeling. Dit kan dus bijvoorbeeld een proefpersoon zijn waar het experiment niet helemaal goed is uitgevoerd. Het gedeelte links van de rode lijn kan genegeerd worden.
+Een andere manier om uitschieters in de data weer te geven is een dichtheids grafiek. Dit plot geeft ook de verdeling van de data weer. Als alle lijnen van de grafiek op elkaar liggen, is de data goed verdeeld. Eventuele uitschieters zijn goed zichtbaar.
 
 ```{r}
-#library(affy)
-plotDensity(log2(data[9:ncol(data)] + 0.05), 
-            main = "Dichtheidsplot van alle data samples",
-            ylab = "Dichtheid")
-
+library(affy)
+plotDensity(log2(data[9:ncol(data)] + 0.05),
+main = "Dichtheidsplot van alle data samples",
+ylab = "Dichtheid")
 abline(v = -2, col = "red", lwd = 1, lty = 1)
 ```
 
-Op het eerste oog lijkt de data behoorlijk "bij elkaar" te liggen na een log2 transformatie. Wel valt het op dat zowel het begin- als het einde van de piek een hoger bereik heeft dan in het midden. 
+Zoals je kunt zien zit er een hele groot piek links van de rode lijn. Zoals eerder opgemerkt bevat de data heel veel nullen. De data is getransformeerd. De log2 van 0.05 is ~ -4.3. Deze piek zijn dus alle waarden met nul en kunnen genegeerd worden (daarom is er om die reden ook een rode lijn geplaatst).
+
+In de figuur is op twee plekken een duidelijk ander verloop te zien. Aan het begin en aan het einde van de stijging is andere verloop tussen de samples. Hier is de data dus niet helemaal gelijk verdeeld. Na het normaliseren van de data is het mogelijk om eventuele afwijkende samples weg te gooien, om deze uitschieters eruit te filteren.
+
+## Normalisatie van de data en de afstand tussen de samples
+
+Om zoveel mogelijk ruis uit de data te halen is het mogelijk om te normaliseren. Onderstaand zal er een simpele normalisatie worden uitgevoerd met het DESeq2 pakket. De meest basale vorm van normalisatie wordt toegepast.
+
+```{r}
+library('DESeq2')
+
+(ddsMat <- DESeqDataSetFromMatrix(countData = data[9:ncol(data)],
+colData = data.frame(samples = names(data[9:ncol(data)])),
+design = ~ 1))
+
+# uitvoeren van de normalisatie
+rld.dds <- vst(ddsMat)
+# waarden ophalen
+rld <- assay(rld.dds)
+```
+
+Nu de data genormaliseerd is kunnen we de afstand berekenen tussen de samples om aan te tonen hoever de data bij elkaar is. Deze afstanden kunnen we weergeven in een heatmap.
+
+```{r}
+sampledists <- dist(rld)
+# We use the 'pheatmap' library (install with install.packages('pheatmap'))
+library(pheatmap)
+# Convert the 'dist' object into a matrix for creating a heatmap
+sampleDistMatrix <- as.matrix(sampledists)
+pheatmap(sampleDistMatrix, show_colnames = FALSE,
+clustering_distance_rows = sampledists,
+clustering_distance_cols = sampledists,
+cluster_rows = F,
+cluster_cols = F,
+main = "Sample Distances")
+```
+
+In de heatmap.......
+
+Op de data kunnen we ook multi-dimensionale schaling (MDS) toepassen. Dit is vergelijkbaar met de heatmap, maar hierbij worden de afstanden op een andere manier berekend. Ook worden ze 2d weergegeven. Bij MDS wordt Poisson afstandsberekening toegepast.
+
+```{r}
+library('PoiClaClu')
+# Note: uses the raw-count data, PoissonDistance performs normalization
+# set by the 'type' parameter (uses DESeq)
+dds <- assay(ddsMat)
+poisd <- PoissonDistance( t(dds), type = "deseq")
+# Extract the matrix with distances
+samplePoisDistMatrix <- as.matrix(poisd$dd)
+# Calculate the MDS and get the X- and Y-coordinates
+mdsPoisData <- data.frame( cmdscale(samplePoisDistMatrix) )
+
+# And set some better readable names for the columns
+names(mdsPoisData) <- c('x_coord', 'y_coord')
+```
+
+En natuurlijk het maken van de grafiek.
+
+```{r}
+coldata <- names(counts)
+myColors <- c("red", "blue", "green")
+plot(mdsPoisData, col=rep(myColors, each=3), pch=20, lwd=2)
+legend(x=-20000, y=11000, legend = levels(groups), col=myColors, pch=20)
+
+```
+
+In de grafiek.....
+
