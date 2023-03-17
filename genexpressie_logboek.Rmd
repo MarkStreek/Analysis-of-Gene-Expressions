@@ -3,6 +3,7 @@ title: "Project_logboek_Genexpressie"
 author: "Mark van de Streek"
 date: "`r Sys.Date()`"
 output: pdf_document
+toc: true
 ---
 
 ```{r setup, include=FALSE}
@@ -58,7 +59,8 @@ Met behulp van bioinformatische bevindingen zijn in dit onderzoek onderscheid ge
 Onderstaand wordt de data van het bestand ingeladen. Helaas is er in het bestand nog niet duidelijk welke samples precies bij welke groep horen. Vandaar dat er nog een aantal stappen moeten worden uitgevoerd om de juiste namen bij de juiste samples te krijgen. 
 
 ```{r}
-data <- read.table("data/GSE169757_Partek_Hum_BC_RNA_Jan2018_UnfilteredCounts_82.txt", header = T, sep = "\t")
+data <- read.table("data/GSE169757_Partek_Hum_BC_RNA_Jan2018_UnfilteredCounts_82.txt", 
+                   header = T, sep = "\t")
 ```
 
 ```{r}
@@ -126,7 +128,9 @@ Om dit probleem op te lossen, moeten we alle waarden met 0 'wegfilteren'. Dit is
 Onderstaand de boxplot van de controle groep, met getransformeerde data.
 
 ```{r}
-boxplot(log2(data[control] + 1), las = 2, col = "#83A3EE", main = "log2 transformatie van de verdeling van de control groep", ylab = "Aantal RNA")
+boxplot(log2(data[control] + 1), las = 2, col = "#83A3EE", 
+        main = "log2 transformatie van de verdeling van de control groep", 
+        ylab = "Aantal RNA")
 ```
 
 Zoals je kunt zien op het figuur liggen alle boxen behoorlijk dicht bij elkaar. Je zou dus zeggen dat deze data goed is verdeeld. Echter is dit nog maar een simpele log2 transformatie en kunnen we dus nog verder kijken naar normalisatie.
@@ -172,8 +176,10 @@ sampledists <- dist(t(rld))
 sampleDistMatrix <- as.matrix(sampledists)
 
 
-annotation <- data.frame(Cell = factor(c(rep(1, length(smoker)), rep(2, length(control)), rep(3, length(vaper))), 
-                                          labels = c("Smoker", "Control", "Vaper")))
+annotation <- data.frame(Cell = factor(c(rep(1, length(smoker)), 
+                                         rep(2, length(control)), 
+                                         rep(3, length(vaper))), 
+                                      labels = c("Smoker", "Control", "Vaper")))
 
 rownames(annotation) <- names(data[c(smoker, control, vaper)])
 
@@ -208,8 +214,10 @@ names(mdsPoisData) <- c('x_coord', 'y_coord')
 En natuurlijk het maken van de grafiek.
 
 ```{r}
-groups <- factor(c(rep(1, length(smoker)), rep(2, length(control)), rep(3, length(vaper))), 
-                                          labels = c("Smoker", "Control", "Vaper"))
+groups <- factor(c(rep(1, length(smoker)), 
+                   rep(2, length(control)), 
+                   rep(3, length(vaper))), 
+                 labels = c("Smoker", "Control", "Vaper"))
 
 coldata <- names(data[c(smoker, control, vaper)])
 ggplot(mdsPoisData, aes(x_coord, y_coord, color = groups, label = coldata)) + 

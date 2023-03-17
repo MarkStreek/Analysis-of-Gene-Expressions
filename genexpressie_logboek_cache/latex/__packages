@@ -1,0 +1,17 @@
+base
+BiocGenerics
+Biobase
+GEOquery
+pander
+affy
+ggplot2
+PoiClaClu
+pheatmap
+S4Vectors
+IRanges
+GenomeInfoDb
+GenomicRanges
+matrixStats
+DelayedArray
+SummarizedExperiment
+DESeq2
