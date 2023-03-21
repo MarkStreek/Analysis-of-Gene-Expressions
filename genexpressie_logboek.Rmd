@@ -175,11 +175,14 @@ sampledists <- dist(t(rld))
 # Convert the 'dist' object into a matrix for creating a heatmap
 sampleDistMatrix <- as.matrix(sampledists)
 
-
-annotation <- data.frame(Cell = factor(c(rep(1, length(smoker)), 
+group <- factor(c(rep(1, length(smoker)), 
                                          rep(2, length(control)), 
                                          rep(3, length(vaper))), 
-                                      labels = c("Smoker", "Control", "Vaper")))
+                                      labels = c("Smoker", "Control", "Vaper"))
+
+group <- relevel(group, ref = "Control")
+
+annotation <- data.frame(group = group)
 
 rownames(annotation) <- names(data[c(smoker, control, vaper)])
 
@@ -308,5 +311,11 @@ De groene lijn is de normaalverdeling. Zoals je kunt zien is de Fold Change mooi
 Nu er duidelijk is welke stappen we naar op zoek zijn, kunnen we beginnen met het zoeken naar de DEG's.
 
 
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = floor(data[9:ncol(data)]),
+                              colData = annotation,
+                              design= ~ group)
+
+```
 
 
