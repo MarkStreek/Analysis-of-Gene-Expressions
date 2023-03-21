@@ -230,30 +230,82 @@ ggplot(mdsPoisData, aes(x_coord, y_coord, color = groups, label = coldata)) +
 
 Zoals je kunt zien zijn er heel veel samples die verspreid zijn. Er zijn niet echt groepen. Toch kun je duidelijk zien dat de groepen vaper en control samen een groep vormen met blauw en groen. Er zijn van de rokers groep wel een aantal samples die ook in de groep vallen, maar dat zijn er niet veel. Ook vertoond de rokers groep behoorlijke individuele afwijkingen. 
 
-## Differentieel tot expressie gebrachte genen (DEG's)
+# Differentieel tot expressie gebrachte genen (DEG's)
 
-Het uiteindelijke doel is om genen te vinden die afwijken van de 'normale' genen. Het is ook belangrijk om genen te vinden die ook significant verschillen van de normaal. Hiervoor gaan we testen uitvoeren. Echter zijn de testen heel erg gevoelig voor buitenliggende waarden. Om deze reden voeren we nog een normalisatie uit, maar dan op een andere manier. We kunnen altijd later nog makklijk samples verwijderen en we kunnen daarom voor de zekerheid zoveel mogelijk visualitaties hebben om dit goed te onderbouwen. 
+Onderstaand voeren we een aantal 'handmatige' stappen uit die een package simpel kan doen. Dit doen we om te kijken waar we nou precies naar op zoek zijn. Als laatste wordt wel een package gebruikt om de DEG's op te sporen. 
+
+Het uiteindelijke doel is om genen te vinden die afwijken van de 'normale' genen. Het is ook belangrijk om genen te vinden die ook significant verschillen van de normaal.Hiervoor gaan we testen uitvoeren. Echter zijn de testen heel erg gevoelig voor buitenliggende waarden. Om deze reden voeren we nog een normalisatie uit, maar dan op een andere manier. We kunnen altijd later nog makklijk samples verwijderen en we kunnen daarom voor de zekerheid zoveel mogelijk visualitaties hebben om dit goed te onderbouwen. 
 
 We gaan de data normaliseren door middel van de counts per miljoen. Het aantal counts wordt berekend per miljoen. Deze data transformeren we vervolgens met de log2. Eerder keken we nog naar de lengte van de genen, maar nu kijken we puur alleen naar het aantal counts.
 
 ```{r}
-counts.fpm <- log2( (data[vaper] / (colSums(data[c(smoker, control, vaper)]) / 1e6)) + 1 )
+counts.fpm <- log2( (data[c(smoker, control, vaper)] / (colSums(data[c(smoker, control, vaper)]) / 1e6)) + 1 )
 plotDensity(counts.fpm,
 main = "Dichtheidsplot van alle data samples",
 ylab = "Dichtheid")
 abline(v = .75, col = "red", lwd = 1, lty = 1)
 ```
 
-Als we het vergelijken met het dichtheidsplot van de andere genormaliseerde data zou je zeggen dat dit velen malen beter is. De data lijkt nu ook velen malen beter verdeeld. Echter is dit maar één soort grafiek. We kunnen dus aan de hand van deze data niet te veel conclusies trekken.
+de log2 functie kan geen 'overige' waarden transformeren. De eerste negen kolommen worden dus niet meegegeven, alleen de 'echte' data.
 
+Als we het vergelijken met het dichtheidsplot van de andere genormaliseerde data zou je zeggen dat dit velen malen beter is. De data lijkt nu ook velen malen beter verdeeld. Echter is dit maar één soort grafiek. We kunnen dus aan de hand van deze grafiek niet te veel conclusies trekken.
 
+## Wegfilteren van de nullen in de dataset
+
+Zoals eerder vermeld zijn er heel veel nullen aanwezig in de dataset. Normaal gesproken gebruik je een pakket in R die deze waarden wegfilterd. Voor nu gaan we onze eigen manier bedenken/onderzoeken. In het onderstaande blok wordt de data gefilterd en zullen de verschillen aangetoond worden.
 
 ```{r}
-new_data <- data[rowSums(data[9:ncol(data)] == 0) <= ncol(data[9:ncol(data)]) * 0.25,]
-dim(new_data)
+new_data <- data[rowSums(data[9:ncol(data)] > 5) 
+                 <= ncol(data[9:ncol(data)]) * 0.25,]
+new_data_dims <- dim(new_data)
+
+cat(sprintf("Data is gefilterd, 
+            Oude dataset: %.f regels. 
+            Nieuwe data: %.f regels. 
+            Aantal regels weggefilterd: %.f", 
+        dims[[1]], new_data_dims[[1]], dims[[1]] - new_data_dims[[1]]))
 ```
 
+Er waren heel veel waarden onder de 5 aanwezig in de dataset. Daarom zijn er dus ook veel regels weggefilterd in de 'nieuwe' dataset.
 
+## Fold Change Value (FC)
+
+De FC waarde is de log2 waarde van de experiment/controle ratio. Deze waarde geeft aan simpelweg aan of een bepaald gen een hogere expressie heeft. Of een lagere expressie. Om te verkomen dat de data erg wordt beinvloed door ruis gebruik je de log2 waarde van de ratio. Dit is de Fold Change Value. Bij een FC-waarde van boven de 1, spreek je van een hogere expressie. Bij een FC-waarde tussen de 0 en 1, spreek je van een mindere expressie. 
+
+Hieronder wordt de Fold Change berekend van de genen in de dataset. Hiervoor wordt de FPM-data gebruikt (zie hierboven). Doordat de eerder genormaliseerde data een iets andere volgorde heeft, worden de kolommen voor de groepen 
+
+```{r}
+# Het normaliseren van de gefilterde data
+new_data.counts.fpm <- log2( (new_data[c(smoker, control, vaper)] / (colSums(new_data[c(smoker, control, vaper)]) / 1e6)) + 1 )
+
+vaper.means <- rowMeans(new_data.counts.fpm[grep("Vaper", names(new_data.counts.fpm))])
+control.means <- rowMeans(new_data.counts.fpm[grep("Control", names(new_data.counts.fpm))])
+
+FC <- vaper.means - control.means
+
+hist(FC, 
+     breaks = 40,
+     main = "Histogram van de Fold Change Value (Vaper - Control)",
+     xlab = "Fold Change Value",
+     ylab = "Frequentie",
+     col = "#83A3EE",
+     freq = F)
+
+# Lijn toevoegen bij -1 en 1
+abline(v = -1, col = "red", lty = 2, lwd = 2)
+abline(v = 1, col = "red", lty = 2, lwd = 2)
+
+# Het plotten van de normaalverdeling. 
+# Allereerst datapunten maken tussen -4 en 4
+x <- seq(-4, 4, by = 0.1)
+curve(dnorm(x, 0, 1), from = -4, to = 4, col="darkgreen", add=T, lwd = 2)
+```
+
+De groene lijn is de normaalverdeling. Zoals je kunt zien is de Fold Change mooi normaal verdeeld. Dit betekend dat we dus zeker een aantal DEG's kunnen vinden. 
+
+## DEG analyse met behulp van Bioconductor Packages
+
+Nu er duidelijk is welke stappen we naar op zoek zijn, kunnen we beginnen met het zoeken naar de DEG's.
 
 
 
