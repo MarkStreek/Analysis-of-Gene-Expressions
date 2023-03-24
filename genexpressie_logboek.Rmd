@@ -153,12 +153,8 @@ In de figuur is op twee plekken een duidelijk ander verloop te zien. Aan het beg
 Om zoveel mogelijk ruis uit de data te halen is het mogelijk om te normaliseren. Onderstaand zal er een simpele normalisatie worden uitgevoerd met het DESeq2 pakket. De meest basale vorm van normalisatie wordt toegepast.
 
 ```{r}
-for (cols in names(data[9:ncol(data)])) {
-  data[[cols]] <- as.integer(data[[cols]])
-}
-
-(ddsMat <- DESeqDataSetFromMatrix(countData = data[c(smoker, control, vaper)],
-colData = data.frame(samples = names(data[c(smoker, control, vaper)])),
+(ddsMat <- DESeqDataSetFromMatrix(countData = floor(data[c(control, smoker, vaper)]),
+colData = data.frame(samples = names(data[c(control, smoker, vaper)])),
 design = ~ 1))
 
 # uitvoeren van de normalisatie
@@ -175,16 +171,14 @@ sampledists <- dist(t(rld))
 # Convert the 'dist' object into a matrix for creating a heatmap
 sampleDistMatrix <- as.matrix(sampledists)
 
-group <- factor(c(rep(1, length(smoker)), 
-                                         rep(2, length(control)), 
-                                         rep(3, length(vaper))), 
-                                      labels = c("Smoker", "Control", "Vaper"))
-
-group <- relevel(group, ref = "Control")
+group <- factor(c(rep(1, length(control)), 
+                  rep(2, length(smoker)), 
+                  rep(3, length(vaper))), 
+                  labels = c("Control", "Smoker", "Vaper"))
 
 annotation <- data.frame(group = group)
 
-rownames(annotation) <- names(data[c(smoker, control, vaper)])
+rownames(annotation) <- names(data[c(control, control, vaper)])
 
 pheatmap(sampleDistMatrix, show_colnames = FALSE,
 clustering_distance_rows = sampledists,
@@ -217,13 +211,8 @@ names(mdsPoisData) <- c('x_coord', 'y_coord')
 En natuurlijk het maken van de grafiek.
 
 ```{r}
-groups <- factor(c(rep(1, length(smoker)), 
-                   rep(2, length(control)), 
-                   rep(3, length(vaper))), 
-                 labels = c("Smoker", "Control", "Vaper"))
-
-coldata <- names(data[c(smoker, control, vaper)])
-ggplot(mdsPoisData, aes(x_coord, y_coord, color = groups, label = coldata)) + 
+coldata <- names(data[c(control, smoker, vaper)])
+ggplot(mdsPoisData, aes(x_coord, y_coord, color = group, label = coldata)) + 
   geom_text(size = 4) +
   ggtitle('Multi Dimensional Scaling') +
   labs(x = "Poisson Distance", y = "Poisson Distance") +
@@ -242,7 +231,7 @@ Het uiteindelijke doel is om genen te vinden die afwijken van de 'normale' genen
 We gaan de data normaliseren door middel van de counts per miljoen. Het aantal counts wordt berekend per miljoen. Deze data transformeren we vervolgens met de log2. Eerder keken we nog naar de lengte van de genen, maar nu kijken we puur alleen naar het aantal counts.
 
 ```{r}
-counts.fpm <- log2( (data[c(smoker, control, vaper)] / (colSums(data[c(smoker, control, vaper)]) / 1e6)) + 1 )
+counts.fpm <- log2( (data[c(control, smoker, vaper)] / (colSums(data[c(control, smoker, vaper)]) / 1e6)) + 1 )
 plotDensity(counts.fpm,
 main = "Dichtheidsplot van alle data samples",
 ylab = "Dichtheid")
@@ -279,7 +268,7 @@ Hieronder wordt de Fold Change berekend van de genen in de dataset. Hiervoor wor
 
 ```{r}
 # Het normaliseren van de gefilterde data
-new_data.counts.fpm <- log2( (new_data[c(smoker, control, vaper)] / (colSums(new_data[c(smoker, control, vaper)]) / 1e6)) + 1 )
+new_data.counts.fpm <- log2( (new_data[c(control, smoker, vaper)] / (colSums(new_data[c(control, smoker, vaper)]) / 1e6)) + 1 )
 
 vaper.means <- rowMeans(new_data.counts.fpm[grep("Vaper", names(new_data.counts.fpm))])
 control.means <- rowMeans(new_data.counts.fpm[grep("Control", names(new_data.counts.fpm))])
@@ -312,10 +301,32 @@ Nu er duidelijk is welke stappen we naar op zoek zijn, kunnen we beginnen met he
 
 
 ```{r}
-dds <- DESeqDataSetFromMatrix(countData = floor(data[9:ncol(data)]),
+dds <- DESeqDataSetFromMatrix(countData = floor(data[c(control, smoker, vaper)]),
                               colData = annotation,
                               design= ~ group)
 
+
+dds <- DESeq(dds)
+resultsNames(dds)
+
+res_control_vs_smoker <- results(dds, name = "group_Smoker_vs_Control")
+res_control_vs_vaper <- results(dds, name = "group_Vaper_vs_Control")
+
+res_control_vs_vaper <- lfcShrink(dds, coef = "group_Vaper_vs_Control", type = "apeglm")
+res_control_vs_smoker <- lfcShrink(dds, coef = "group_Smoker_vs_Control", type = "apeglm")
+
+par(mfrow=c(1,2))
+plotMA(res_control_vs_vaper, main = "Control - Vaper")
+plotMA(res_control_vs_smoker, main = "Control - Smoker")
+
+
+summary(res_control_vs_smoker)
+summary(res_control_vs_vaper)
+
+
 ```
+
+
+
 
 
