@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+genexpressie_logboek_cache/
+genexpressie_logboek_files/
+.DS_Store
