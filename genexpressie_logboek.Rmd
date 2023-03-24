@@ -18,6 +18,7 @@ library('ggplot2')
 library('PoiClaClu')
 library(pheatmap)
 library('DESeq2')
+library(EnhancedVolcano)
 ```
 
 # Gen expressie Logboek
@@ -178,7 +179,7 @@ group <- factor(c(rep(1, length(control)),
 
 annotation <- data.frame(group = group)
 
-rownames(annotation) <- names(data[c(control, control, vaper)])
+rownames(annotation) <- names(data[c(control, smoker, vaper)])
 
 pheatmap(sampleDistMatrix, show_colnames = FALSE,
 clustering_distance_rows = sampledists,
@@ -297,14 +298,14 @@ De groene lijn is de normaalverdeling. Zoals je kunt zien is de Fold Change mooi
 
 ## DEG analyse met behulp van Bioconductor Packages
 
-Nu er duidelijk is welke stappen we naar op zoek zijn, kunnen we beginnen met het zoeken naar de DEG's.
+Nu er duidelijk is welke stappen we naar op zoek zijn, kunnen we beginnen met het zoeken naar de DEG's. We gebruiken hiervoor de DESEQ module. Deze module hebben we ook al eerder gebruikt voor de heatmap en mds-plot. Het annotation dataframe wat we voor de heatmap hebben gebruikt kunnen we nu weer gebruiken. Het is wel belangrijk dat de controle groep als eerste voorkomt in het dataframe.
 
+Om te beginnen maken we een DESeq object en voeren we hierop de testen uit. Omdat het experiment (maar) drie groepen bevat, voeren we ze allebei uit. Roker tegen controle en vaper tegen controle. Voor de visualisatie is het belangrijk om nog een lfcshrink toe te passen. Deze functie haalt de ruis weg. 
 
 ```{r}
 dds <- DESeqDataSetFromMatrix(countData = floor(data[c(control, smoker, vaper)]),
                               colData = annotation,
                               design= ~ group)
-
 
 dds <- DESeq(dds)
 resultsNames(dds)
@@ -315,17 +316,23 @@ res_control_vs_vaper <- results(dds, name = "group_Vaper_vs_Control")
 res_control_vs_vaper <- lfcShrink(dds, coef = "group_Vaper_vs_Control", type = "apeglm")
 res_control_vs_smoker <- lfcShrink(dds, coef = "group_Smoker_vs_Control", type = "apeglm")
 
-par(mfrow=c(1,2))
-plotMA(res_control_vs_vaper, main = "Control - Vaper")
-plotMA(res_control_vs_smoker, main = "Control - Smoker")
+par(mfrow = c(1, 2))
+plotMA(res_control_vs_vaper, main = "Control - Vaper", ylim = c(-4, 6), alpha = 0.1)
+plotMA(res_control_vs_smoker, main = "Control - Smoker", ylim = c(-4, 6), alpha = 0.1)
+abline(h = c(-1.5, 1.5))
 
+
+# sum(abs(res_control_vs_vaper$log2FoldChange) > 1.5 & res_control_vs_vaper$padj < 0.1, na.rm = T)
 
 summary(res_control_vs_smoker)
 summary(res_control_vs_vaper)
-
-
 ```
 
+De genen worden vervolgens geplot in een MA-plot. Wel goed om op te merken is dat er in het originele onderzoek gebruik is gemaakt van een LFC-treshold is gebruikt van 1.5. Deze kan niet worden toegevoegd aan de test. Om de grafiek wat 'duidelijker' te maken zijn er twee lijnen geplot. Een lijn bij -1.5 en 1.5. Alle blauwe stippen die onder/boven deze lijnen liggen kunnen worden beschouwd als DEG. 
+
+Zoals je kunt zien zijn er heel veel genen met een significantie die net onder de grens van 1.5 LFC liggen. Deze genen worden door het MA-plot nog geclasicifeerd als DEG, maar dit is voor het onderzoek niet het geval. 
+
+In de volgende sectie zullen we een vulcano plot behandelen. In dit plot kunnen we wel een grens opgeven voor de LFC. Op deze manier wordt er duidelijker welke genen nou echt DEG's zijn (volgens het originele onderzoek). Zonder deze grens zijn er 5000 DEG's bij de Rokers groep. Dit op een totaalaantal van ~ 38000 genen. Er worden standaard dus erg veel genen gekenmerkd als DEG en het is dus belangrijk om hier nog een extra 'grens' voor toe te voegen. Met deze grens kunnen de genen worden getoond die uitschieten. 
 
 
 
