@@ -14,7 +14,7 @@ toc: yes
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(cache = TRUE)
 
-# Het inladen van de librarys
+# Het inladen van de paketten die nodig zijn
 library(GEOquery)
 library(pander)
 library(affy)
@@ -28,7 +28,9 @@ library(VennDiagram)
 
 # Gen expressie Logboek
 
-In dit logboek wordt een onderzoek uitgelicht naar het roken van sigaretten en de elektronische sigaret, ook wel de vape genoemd. In het onderzoek is gebruikt gemaakt van RNA-seq data. Er is dus gekeken naar expressie van bepaalde genen. Om precies te zijn is er gekeken naar genen die aanwezig zijn in leukocyten (witte bloedcellen).
+Het doel van dit logboek is om het onderzoek wat benoemd wordt te reproduceren. Verder wordt er gekeken of er nog meer biologische vragen beantwoordt kunnen worden, die de onderzoekers niet hebben behandeld.
+
+Het onderzoek gaat over het roken van sigaretten en de elektronische sigaret, ook wel de vape genoemd. In het onderzoek is gebruikt gemaakt van RNA-seq data. Er is dus gekeken naar expressie van bepaalde genen. Om precies te zijn is er gekeken naar genen die aanwezig zijn in leukocyten (witte bloedcellen).
 
 ## Het onderzoek 
 
@@ -60,17 +62,26 @@ De groep die werd geclassificeerd als vapers in dit onderzoek heeft in de 6 maan
 
 Met behulp van bioinformatische bevindingen zijn in dit onderzoek onderscheid gemaakt tussen gezonde volwassen vapers, met en zonder geschiedenis van roken, en 'exclusieve' sigaretten rokers. Ook is specifiek de expressie van genen in rokers (zowel e-sigaret als traditionele rokers) vergeleken met niet-rokers.
 
-## Inladen van de Data
+## 3. Verkenning van de data
 
-Onderstaand wordt de data van het bestand ingeladen. Helaas is er in het bestand nog niet duidelijk welke samples precies bij welke groep horen. Vandaar dat er nog een aantal stappen moeten worden uitgevoerd om de juiste namen bij de juiste samples te krijgen. 
+In de eerste sectie worden de verkennende data analyses uitgevoerd. Er wordt dus bijvoorbeeld gekeken naar de verdeling van de data, maar ook naar bijvoorbeeld de kwaliteit van de data. In het laatste gedeelte van deze sectie wordt een normalisatie uitgevoerd.
+
+### 3.1 Inladen van de data
+
+Onderstaand wordt de data van het bestand ingeladen. Helaas is er in het bestand nog niet duidelijk welke samples precies bij welke groep horen. Vandaar dat er nog een aantal stappen moeten worden uitgevoerd om de juiste namen bij de juiste samples te krijgen. De data betreft ongefilterde tellingen van de genexpressie.
 
 ```{r}
-data <- read.table("data/GSE169757_Partek_Hum_BC_RNA_Jan2018_UnfilteredCounts_82.txt", 
-                   header = T, sep = "\t")
+data <- read.table(
+  "data/GSE169757_Partek_Hum_BC_RNA_Jan2018_UnfilteredCounts_82.txt", 
+  header = T, 
+  sep = "\t")
+
+# In de eerste kolom van het bestand staat alleen een index,
+# We willen hier de gennamen hebben
 row.names(data) <- data$gene_name
 ```
 
-```{r}
+```{r echo = T, results = 'hide'}
 Sys.setenv(VROOM_CONNECTION_SIZE=50007200)
 
 # Opzoeken van het ID en defineren in een object
@@ -99,13 +110,15 @@ unique_group_names <- make.unique(all_modified_group_names, sep = "_")
 names(data)[9:ncol(data)] <- unique_group_names
 ```
 
-### Eerste kijk op data
+### 3.2 Eerste kijk op data
 
 Nu de data goed is ingeladen met alle juiste namen kunnen we kijken hoe het precies er uit ziet. Ook kunnen we kijken wat het precieze aantal rijen en kolommen zijn, ook wel de dimenties. 
 
 ```{r}
 pander(head(data[1:4, c(1, 2, 8, 9, 10, 11)]))
 ```
+
+In de data zit de volgende informatie: chromosome, start- en stop-positie, streng, gen symbool/gen naam, havana gen en natuurlijk de samples. Van elke sample is dus meer informatie op te zoeken dan simpelweg alleen de telwaarde. De havana gen kolom is een kolom die unieke waardes bevat die verwijzen naar een specifiek gen, dat op een specifieke locatie op het menselijk genoom ligt. De waardes zijn geannoteerd door het HAVANA-project, om genen, exonen, etc. op het menselijk genoom te identificeren.
 
 ```{r}
 dims <- dim(data)
@@ -114,7 +127,7 @@ sprintf("Aantal rijen: %.f en aantal kolommen: %.f", dims[1], dims[2])
 
 We weten nu hoe de data eruit ziet en hoe groot het precies is. Vanaf kolom nummer negen beginnen de 'samples'. De samples staan dus niet onder elkaar, maar naast elkaar. 
 
-### Classificatie van variabelen
+#### Classificatie van variabelen
 
 Omdat we niet de hele tijd willen opzoeken welke kolomnummers bij welke groep hoeren, gaan we dit defineren. Op deze manier kunnen we makkelijk een variabel invullen om vervolgens snel alle data van de bijhorende groep te krijgen. 
 
@@ -126,9 +139,13 @@ control <- grep("Control", names(data))
 
 > Grep() geeft de nummers van kolommen terug waar het woord in voorkomt. 
 
-## Verdeling van de data
+### 3.3 Verdeling van de data
 
-De groepen zijn nu geclassificeerd en we kunnen dus kijken hoe de data is verdeeld. We kunnen het duidelijk weergeven op twee manieren. Allereerst een boxplot. Als de boxen van de figuren allemaal rond een lijn zitten, is de data goed dicht bij elkaar. Echter zal het met zo'n grote dataset nooit helemaal duidelijk verdeeld zijn. Er zijn bijvoorbeeld bij elke sample heel veel nullen aanwezig. Deze nullen 'trekken' de andere waren behoorlijk naar beneden. De boxplot heeft geen details meer en zegt dan niks meer.
+De groepen zijn nu geclassificeerd en we kunnen dus kijken hoe de data is verdeeld. We kunnen het duidelijk weergeven op twee manieren. Onderstaand worden er twee figuren gemaakt om te kijken hoe de data verdeeld is; een boxplot en een dichtheidsplot.
+
+#### 3.3.1 Boxplot
+
+Allereerst een boxplot. Als de boxen van de figuren allemaal rond een lijn zitten, is de data goed dicht bij elkaar. Een probleem van de 'ruwe' dat is de hoeveelheid nullen. Deze nullen 'trekken' de andere waarden behoorlijk naar beneden. De boxplot heeft geen details meer en zegt dan niks meer.
 
 Om dit probleem op te lossen, moeten we alle waarden met 0 'wegfilteren'. Dit is makkelijk te doen met een log2 transformatie. Het bereik tussen de samples wordt op deze manier kleiner. De waarden met 0 domineren minder in de data.
 
@@ -140,14 +157,17 @@ boxplot(log2(data[control] + 1), las = 2, col = "#83A3EE",
         ylab = "Aantal RNA")
 ```
 
-Zoals je kunt zien op het figuur liggen alle boxen behoorlijk dicht bij elkaar. Je zou dus zeggen dat deze data goed is verdeeld. Echter is dit nog maar een simpele log2 transformatie en kunnen we dus nog verder kijken naar normalisatie.
+Zoals je kunt zien op het figuur liggen alle boxen behoorlijk dicht bij elkaar. Je zou dus zeggen dat deze data goed is verdeeld. Echter is dit nog maar een simpele log2 transformatie en kunnen we dus nog verder kijken naar normalisatie. Uiteraard kun je ook niet een conclusie trekken van één figuur.
 
-Een andere manier om uitschieters in de data weer te geven is een dichtheids grafiek. Dit plot geeft ook de verdeling van de data weer. Als alle lijnen van de grafiek op elkaar liggen, is de data goed verdeeld. Eventuele uitschieters zijn goed zichtbaar.
+#### 3.3.2 Dichtheidsplot
+
+Een andere manier om uitschieters in de data weer te geven is een dichtheids grafiek. Dit plot geeft ook de verdeling van de data weer. Als alle lijnen van de grafiek op elkaar liggen, is de data goed verdeeld. Eventuele uitschieters zijn goed zichtbaar. We willen dus in de grafiek zo min mogelijk lijnen zien die afwijken van de andere lijnen.
 
 ```{r}
 plotDensity(log2(data[9:ncol(data)] + 0.05),
 main = "Dichtheidsplot van alle data samples",
-ylab = "Dichtheid")
+ylab = "Dichtheid",
+xlab = "Log2 van de data")
 abline(v = -2, col = "red", lwd = 1, lty = 1)
 ```
 
@@ -155,7 +175,16 @@ Zoals je kunt zien zit er een hele groot piek links van de rode lijn. Zoals eerd
 
 In de figuur is op twee plekken een duidelijk ander verloop te zien. Aan het begin en aan het einde van de stijging is andere verloop tussen de samples. Hier is de data dus niet helemaal gelijk verdeeld. Na het normaliseren van de data is het mogelijk om eventuele afwijkende samples weg te gooien, om deze uitschieters eruit te filteren.
 
-## Normalisatie van de data en de afstand tussen de samples
+#### 3.3.3 Staafdiagram
+
+Een laastste methode die we gebruiken om te kijken is een staafdiagram van het aantal reads. We gebruiken de functie colsums om alle waarden op te tellen. Het doel van dit figuur is het prijsgeven van het aantal reads per sample. Het zegt dus iets over de dekking van de data.
+
+```{r}
+barplot(colSums(data[c(control, smoker, vaper)]) / 1e6, las = 2)
+```
+
+
+### 3.4 Normalisatie van de data en de afstand tussen de samples
 
 Om zoveel mogelijk ruis uit de data te halen is het mogelijk om te normaliseren. Onderstaand zal er een simpele normalisatie worden uitgevoerd met het DESeq2 pakket. De meest basale vorm van normalisatie wordt toegepast.
 
@@ -372,8 +401,8 @@ deseq.volcano <- function(res, datasetName) {
 
 ```{r}
 # Het maken van de Volcano grafieken
-deseq.volcano(res = res_control_vs_vaper_shrink, datasetName = "Control - Vaper")
-deseq.volcano(res = res_control_vs_smoker_shrink, datasetName = "Control - Smoker")
+#deseq.volcano(res = res_control_vs_vaper_shrink, datasetName = "Control - Vaper")
+#deseq.volcano(res = res_control_vs_smoker_shrink, datasetName = "Control - Smoker")
 ```
 
 ## Venn Diagram
