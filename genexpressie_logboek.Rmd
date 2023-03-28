@@ -180,42 +180,55 @@ In de figuur is op twee plekken een duidelijk ander verloop te zien. Aan het beg
 Een laastste methode die we gebruiken om te kijken is een staafdiagram van het aantal reads. We gebruiken de functie colsums om alle waarden op te tellen. Het doel van dit figuur is het prijsgeven van het aantal reads per sample. Het zegt dus iets over de dekking van de data.
 
 ```{r}
-barplot(colSums(data[c(control, smoker, vaper)]) / 1e6, las = 2)
+barplot(colSums(data[c(control, smoker, vaper)]) / 1e6,
+        main = "Aantal reads per sample",
+        xlab = "Samples",
+        ylab = "Aantal reads (x 10^6)",
+        las = 2, 
+        cex.names = .5,
+        col = "#83A3EE")
 ```
 
 
 ### 3.4 Normalisatie van de data en de afstand tussen de samples
 
-Om zoveel mogelijk ruis uit de data te halen is het mogelijk om te normaliseren. Onderstaand zal er een simpele normalisatie worden uitgevoerd met het DESeq2 pakket. De meest basale vorm van normalisatie wordt toegepast.
+Om te kijken of de data ver uit elkaar ligt, maken we twee figuren. We berekenen de afstanden tussen de datapunten en plotten dit.
+
+Om zoveel mogelijk ruis uit de data te halen, wordt de data genormaliseerd. De gegevens worden aangepast om er voor te zorgen dat ze gelijk zijn. Onderstaand zal er een simpele normalisatie worden uitgevoerd met het DESeq2 pakket. De meest basale vorm van normalisatie wordt toegepast. Er wordt onder andere genormaliseerd op basis van gen-lengte.
 
 ```{r}
-(ddsMat <- DESeqDataSetFromMatrix(countData = floor(data[c(control, smoker, vaper)]),
+# Maken van het DESEQ object
+ddsMat <- DESeqDataSetFromMatrix(countData = floor(data[c(control, smoker, vaper)]),
 colData = data.frame(samples = names(data[c(control, smoker, vaper)])),
-design = ~ 1))
+design = ~ 1)
 
-# uitvoeren van de normalisatie
+# Uitvoeren van de normalisatie
 rld.dds <- vst(ddsMat)
-# waarden ophalen
+# Waarden ophalen
 rld <- assay(rld.dds)
 ```
 
-Nu de data genormaliseerd is kunnen we de afstand berekenen tussen de samples om aan te tonen hoever de data bij elkaar is. Deze afstanden kunnen we weergeven in een heatmap.
+#### 3.4.1 Afstanden weergeven met heatmap
+
+Nu de data genormaliseerd is, kunnen de afstanden berekend worden tussen de samples om aan te tonen hoe dicht de data bij elkaar ligt. Een mooie manier om de afstanden weer te geven is een heatmap. In een heatmap zijn de waarden die dicht bij elkaar liggen rood en de waarden die verder weg liggen blauw. De heatmap wordt gemaakt met de pheatmap package.
 
 ```{r}
+# Berekenen van de afstanden
 sampledists <- dist(t(rld))
-# We use the 'pheatmap' library (install with install.packages('pheatmap'))
-# Convert the 'dist' object into a matrix for creating a heatmap
 sampleDistMatrix <- as.matrix(sampledists)
 
+# Het maken van een dataframe die gebruikt kan worden om te annoteren
 group <- factor(c(rep(1, length(control)), 
                   rep(2, length(smoker)), 
                   rep(3, length(vaper))), 
                   labels = c("Control", "Smoker", "Vaper"))
 
 annotation <- data.frame(group = group)
-
 rownames(annotation) <- names(data[c(control, smoker, vaper)])
+```
 
+```{r}
+# Het maken van de heatmap
 pheatmap(sampleDistMatrix, show_colnames = FALSE,
 clustering_distance_rows = sampledists,
 clustering_distance_cols = sampledists,
@@ -226,21 +239,24 @@ main = "Sample Distances")
 
 Door de vele aanwezige samples is de heatmap zeer lastig af te lezen. Wel kun je mooi zien dat de eerste vier samples verder wegliggen dan de andere samples. Het is echter lastig om hier meer over te vertellen, omdat er zoveel samples aanwezig zijn. 
 
-## Multi-dimensionele schaling (MDS)
+#### 3.4.2 Multi-dimensionele schaling (MDS)
 
-Op de data kunnen we ook multi-dimensionale schaling (MDS) toepassen. Dit is vergelijkbaar met de heatmap, maar hierbij worden de afstanden op een andere manier berekend. Ook worden ze 2d weergegeven. Bij MDS wordt Poisson afstandsberekening toegepast. Er wordt gekeken welke genen bij elkaar horen. De genen die bij elkaar horen, vormen een groepje in de grafiek.
+Op de data kunnen we ook multi-dimensionale schaling (MDS) toepassen. Dit is vergelijkbaar met de heatmap, maar hierbij worden de afstanden op een andere manier berekend. Bij MDS wordt Poisson afstandsberekening toegepast. Er wordt gekeken welke genen bij elkaar horen. De genen die bij elkaar horen, vormen een groepje in de grafiek.
+
+Allereerst berekenen we de afstanden met de Poisson methode.
 
 ```{r}
-# Note: uses the raw-count data, PoissonDistance performs normalization
-# set by the 'type' parameter (uses DESeq)
 dds <- assay(ddsMat)
+# Afstand berekenen
 poisd <- PoissonDistance( t(dds), type = "deseq")
-# Extract the matrix with distances
+
+# De waarden ophalen uit de matrix
 samplePoisDistMatrix <- as.matrix(poisd$dd)
-# Calculate the MDS and get the X- and Y-coordinates
+
+# Het berekenen van de x- en y-coördinaten
 mdsPoisData <- data.frame( cmdscale(samplePoisDistMatrix) )
 
-# And set some better readable names for the columns
+# Namen aanpassen voor het beter aflezen
 names(mdsPoisData) <- c('x_coord', 'y_coord')
 ```
 
@@ -256,13 +272,17 @@ ggplot(mdsPoisData, aes(x_coord, y_coord, color = group, label = coldata)) +
 
 ```
 
-Zoals je kunt zien zijn er heel veel samples die verspreid zijn. Er zijn niet echt groepen. Toch kun je duidelijk zien dat de groepen vaper en control samen een groep vormen met blauw en groen. Er zijn van de rokers groep wel een aantal samples die ook in de groep vallen, maar dat zijn er niet veel. Ook vertoond de rokers groep behoorlijke individuele afwijkingen. 
+Zoals je kunt zien zijn er heel veel samples die verspreid zijn. Er zijn niet echt groepen. Toch kun je duidelijk zien dat de groepen vaper en control samen een groep vormen met blauw en groen. Er zijn van de rokers groep wel een aantal samples die ook in de groep vallen, maar dat zijn er niet veel. In de rokers groep zijn een aantal individuele punten die ver liggen van de andere waarden. Dit kan bruikbare data zijn om aan te tonen dat een gen/sample een specifieke afwijking heeft in genexpressie.
 
-# Differentieel tot expressie gebrachte genen (DEG's)
+## 4 Differentieel tot expressie gebrachte genen (DEG's)
 
-Onderstaand voeren we een aantal 'handmatige' stappen uit die een package simpel kan doen. Dit doen we om te kijken waar we nou precies naar op zoek zijn. Als laatste wordt wel een package gebruikt om de DEG's op te sporen. 
+In deze sectie gaan we kijken naar DEG's. Een DEG is een gen die met expressie afwijkt van normale genen. Een DEG is afhankelijk van de Log fold change waarde (LFC) en de p-waarde. Voordat we alle gegevens meteen in het pakket gooien, voeren we eerst 'handmatig' een aantal stappen uit.
 
-Het uiteindelijke doel is om genen te vinden die afwijken van de 'normale' genen. Het is ook belangrijk om genen te vinden die ook significant verschillen van de normaal.Hiervoor gaan we testen uitvoeren. Echter zijn de testen heel erg gevoelig voor buitenliggende waarden. Om deze reden voeren we nog een normalisatie uit, maar dan op een andere manier. We kunnen altijd later nog makklijk samples verwijderen en we kunnen daarom voor de zekerheid zoveel mogelijk visualitaties hebben om dit goed te onderbouwen. 
+### 4.1 Voorbewerking van de data
+
+Het uiteindelijke doel is om genen te vinden die afwijken in expressie van de 'normale' genen. Om dit aan te tonen, voeren we statistische testen uit. Echter zijn de testen heel erg gevoelig voor buitenliggende waarden. Om deze reden voeren we nog een normalisatie uit, maar dan op een andere manier.
+
+#### 4.1.1 Normalisatie op basis van reads
 
 We gaan de data normaliseren door middel van de counts per miljoen. Het aantal counts wordt berekend per miljoen. Deze data transformeren we vervolgens met de log2. Eerder keken we nog naar de lengte van de genen, maar nu kijken we puur alleen naar het aantal counts.
 
@@ -276,15 +296,16 @@ abline(v = .75, col = "red", lwd = 1, lty = 1)
 
 de log2 functie kan geen 'overige' waarden transformeren. De eerste negen kolommen worden dus niet meegegeven, alleen de 'echte' data.
 
-Als we het vergelijken met het dichtheidsplot van de andere genormaliseerde data zou je zeggen dat dit velen malen beter is. De data lijkt nu ook velen malen beter verdeeld. Echter is dit maar één soort grafiek. We kunnen dus aan de hand van deze grafiek niet te veel conclusies trekken.
+In vergelijking met het vorige dichtheidsplot, lijkt deze dat nu beter verdeeld te zijn. De meeste lijnen liggen bijna allemaal op één lijn. De normalisatiemethode is echter wel een beetje 'kaal', omdat het zoals eerder vermeld alleen maar rekening houd met het aantal reads.
 
-## Wegfilteren van de nullen in de dataset
+#### 4.1.2 Wegfilteren van de nullen in de dataset
 
-Zoals eerder vermeld zijn er heel veel nullen aanwezig in de dataset. Normaal gesproken gebruik je een pakket in R die deze waarden wegfilterd. Voor nu gaan we onze eigen manier bedenken/onderzoeken. In het onderstaande blok wordt de data gefilterd en zullen de verschillen aangetoond worden.
+Zoals eerder vermeld zijn er heel veel nullen aanwezig in de dataset. Normaal gesproken gebruik je een pakket in R die deze waarden wegfilterd. Sommige paketten hebben echter deze mogelijkheid niet. Voor nu gaan we onze eigen manier bedenken/onderzoeken. 
+
+In het onderstaande blok wordt de data gefilterd en zullen de verschillen aangetoond worden.
 
 ```{r}
-new_data <- data[rowSums(data[9:ncol(data)] > 5) 
-                 <= ncol(data[9:ncol(data)]) * 0.25,]
+new_data <- data[rowSums(data[9:ncol(data)] > 5) <= ncol(data[9:ncol(data)]) * 0.25,]
 new_data_dims <- dim(new_data)
 
 cat(sprintf("Data is gefilterd, 
@@ -294,23 +315,30 @@ cat(sprintf("Data is gefilterd,
         dims[[1]], new_data_dims[[1]], dims[[1]] - new_data_dims[[1]]))
 ```
 
-Er waren heel veel waarden onder de 5 aanwezig in de dataset. Daarom zijn er dus ook veel regels weggefilterd in de 'nieuwe' dataset.
+De genen moeten een expressiewaarde van hoger dan 5 hebben. Dit moet gelden voor 75% van de samples.
 
-## Fold Change Value (FC)
+Er zijn heel veel waarden onder de 5 aanwezig in de dataset. Daarom zijn er dus ook veel regels weggefilterd in de 'nieuwe' dataset.
 
-De FC waarde is de log2 waarde van de experiment/controle ratio. Deze waarde geeft aan simpelweg aan of een bepaald gen een hogere expressie heeft. Of een lagere expressie. Om te verkomen dat de data erg wordt beinvloed door ruis gebruik je de log2 waarde van de ratio. Dit is de Fold Change Value. Bij een FC-waarde van boven de 1, spreek je van een hogere expressie. Bij een FC-waarde tussen de 0 en 1, spreek je van een mindere expressie. 
+### 4.2 Fold Change Value (FC)
 
-Hieronder wordt de Fold Change berekend van de genen in de dataset. Hiervoor wordt de FPM-data gebruikt (zie hierboven). Doordat de eerder genormaliseerde data een iets andere volgorde heeft, worden de kolommen voor de groepen 
+De FC waarde is de log2 waarde van de experiment/controle ratio. Deze waarde geeft simpelweg aan of een bepaald gen een hogere of lagere expressie heeft. Om te verkomen dat de data erg wordt beinvloed door ruis gebruik je de log2 waarde van de ratio. Dit is de Fold Change Value. Bij een FC-waarde van boven de 1, spreek je van een hogere expressie. Bij een FC-waarde tussen de 0 en 1, spreek je van een mindere expressie. 
+
+Hieronder wordt de Fold Change berekend van de genen in de dataset. Hiervoor wordt de FPM-data gebruikt (zie hierboven). Doordat de eerder genormaliseerde data een iets andere volgorde heeft, worden de kolommen voor de groepen opnieuw gedefineert.
 
 ```{r}
 # Het normaliseren van de gefilterde data
 new_data.counts.fpm <- log2( (new_data[c(control, smoker, vaper)] / (colSums(new_data[c(control, smoker, vaper)]) / 1e6)) + 1 )
 
+# Het berekenen van de ratios
 vaper.means <- rowMeans(new_data.counts.fpm[grep("Vaper", names(new_data.counts.fpm))])
 control.means <- rowMeans(new_data.counts.fpm[grep("Control", names(new_data.counts.fpm))])
-
 FC <- vaper.means - control.means
 
+```
+
+Het plotten van de LFC-waarde. Ook wordt er een normaalverdeling toegevoegd in het figuur. Je wil dat de LFC-waarde normaal verdeeld is, omdat de statistische testen zijn op aannames van normaliteit van de gegevens.
+
+```{r}
 hist(FC, 
      breaks = 40,
      main = "Histogram van de Fold Change Value (Vaper - Control)",
@@ -329,11 +357,11 @@ x <- seq(-4, 4, by = 0.1)
 curve(dnorm(x, 0, 1), from = -4, to = 4, col="darkgreen", add=T, lwd = 2)
 ```
 
-De groene lijn is de normaalverdeling. Zoals je kunt zien is de Fold Change mooi normaal verdeeld. Dit betekend dat we dus zeker een aantal DEG's kunnen vinden. 
+De groene lijn is de normaalverdeling. Zoals je kunt zien is de Fold Change mooi normaal verdeeld op deze data.
 
-## DEG analyse met behulp van Bioconductor Packages
+### 4.3 DEG analyse met behulp van R-paketten
 
-Nu er duidelijk is welke stappen we naar op zoek zijn, kunnen we beginnen met het zoeken naar de DEG's. We gebruiken hiervoor de DESEQ module. Deze module hebben we ook al eerder gebruikt voor de heatmap en mds-plot. Het annotation dataframe wat we voor de heatmap hebben gebruikt kunnen we nu weer gebruiken. Het is wel belangrijk dat de controle groep als eerste voorkomt in het dataframe.
+Nu er duidelijk is welke stappen we naar op zoek zijn, kunnen we beginnen met het zoeken naar de DEG's. Het gebruiken hiervoor de DESEQ module. Deze module hebben we ook al eerder gebruikt voor de heatmap en mds-plot. Het annotation dataframe wat we voor de heatmap hebben gebruikt kunnen we nu weer gebruiken. Het is wel belangrijk dat de controle groep als eerste voorkomt in het dataframe.
 
 Om te beginnen maken we een DESeq object en voeren we hierop de testen uit. Omdat het experiment (maar) drie groepen bevat, voeren we ze allebei uit. Roker tegen controle en vaper tegen controle. Voor de visualisatie is het belangrijk om nog een lfcshrink toe te passen. Deze functie haalt de ruis weg. 
 
@@ -344,38 +372,50 @@ dds <- DESeqDataSetFromMatrix(countData = floor(data[c(control, smoker, vaper)])
                               design= ~ group)
 
 dds <- DESeq(dds)
-resultsNames(dds)
+# Deze functie geeft terug welke resulaten er mogelijk zijn met de dataset
+# resultsNames(dds)
+```
 
-# Summary van
+Het object is aangemaakt en er is bekend welke testen er uitgevoerd kunnen worden. De twee resultaten kunnen dus gekoppeld worden aan objecten.
+
+```{r}
 res_control_vs_smoker_lfc <- results(dds, name = "group_Smoker_vs_Control")
 res_control_vs_vaper_lfc <- results(dds, name = "group_Vaper_vs_Control")
+```
 
+Voor het maken van de grafieken is het belangrijk om de ruis die komt van de log2 waarden van lfc-waarden, wordt weggefilterd. Dit wordt gedaan met de lfcShrink functie.
+
+```{r}
 res_control_vs_vaper_shrink <- lfcShrink(dds, coef = "group_Vaper_vs_Control", type = "apeglm")
 res_control_vs_smoker_shrink <- lfcShrink(dds, coef = "group_Smoker_vs_Control", type = "apeglm")
+```
 
+Met de summary functie wordt weergegeven hoeveel DEG's er zijn gevonden. Ook worden hier de percentages bijgegeven.
+
+```{r}
 summary(res_control_vs_smoker_shrink)
 summary(res_control_vs_vaper_shrink)
+```
 
+Het is nu mogelijk om een MA plot te maken van de objecten.
+
+```{r}
 par(mfrow = c(1, 2))
 plotMA(res_control_vs_vaper_shrink, main = "Control - Vaper", ylim = c(-4, 6), alpha = 0.1)
 plotMA(res_control_vs_smoker_shrink, main = "Control - Smoker", ylim = c(-4, 6), alpha = 0.1)
 abline(h = c(-1.5, 1.5))
-
-
-# sum(abs(res_control_vs_vaper$log2FoldChange) > 1.5 & res_control_vs_vaper$padj < 0.1, na.rm = T)
 ```
 
-De genen worden vervolgens geplot in een MA-plot. Wel goed om op te merken is dat er in het originele onderzoek gebruik is gemaakt van een LFC-treshold is gebruikt van 1.5. Deze kan niet worden toegevoegd aan de test. Om de grafiek wat 'duidelijker' te maken zijn er twee lijnen geplot. Een lijn bij -1.5 en 1.5. Alle blauwe stippen die onder/boven deze lijnen liggen kunnen worden beschouwd als DEG. 
-
+Wel goed om op te merken is dat er in het originele onderzoek gebruik is gemaakt van een LFC-treshold van 1.5. Deze kan niet worden toegevoegd aan de test. Om de grafiek wat 'duidelijker' te maken zijn er twee lijnen geplot. Een lijn bij -1.5 en 1.5. Alle blauwe stippen die onder/boven deze lijnen liggen kunnen worden beschouwd als DEG. 
 Zoals je kunt zien zijn er heel veel genen met een significantie die net onder de grens van 1.5 LFC liggen. Deze genen worden door het MA-plot nog geclasicifeerd als DEG, maar dit is voor het onderzoek niet het geval. 
 
 In de volgende sectie zullen we een vulcano plot behandelen. In dit plot kunnen we wel een grens opgeven voor de LFC. Op deze manier wordt er duidelijker welke genen nou echt DEG's zijn (volgens het originele onderzoek). Zonder deze grens zijn er 5000 DEG's bij de Rokers groep. Dit op een totaalaantal van ~ 38000 genen. Er worden standaard dus erg veel genen gekenmerkd als DEG en het is dus belangrijk om hier nog een extra 'grens' voor toe te voegen. Met deze grens kunnen de genen worden getoond die uitschieten. 
 
-# Analyse en Visualisaties
+## 5. Analyse en Visualisaties van de DEG's
 
 Nu er een set met DEG's is, kunnen we visualiseren, d.w.z. figuren maken/namaken en we kunnen ook biologische vragen gaan beantwoorden/conclusie trekken. 
 
-## Volcano plot
+### 5.1 Volcano plot
 
 Allereerst gaan we een volcano plot maken. Zoals hierboven beschreven kan je in een vulcano plot zowel de p-waarde als de LFC-waarde weergeven. Het doel is om vergelijkbare aantal DEG's te krijgen die in het originele onderzoek ook aanwezig waren.
 
@@ -388,46 +428,53 @@ deseq.volcano <- function(res, datasetName) {
                          subtitle = bquote(italic('FDR <= 0.1 and absolute FC >= 1.5')),
                          labSize = 3, pointSize = 1.5, axisLabSize=10, titleLabSize=12,
                          subtitleLabSize=8, captionLabSize=10,
-                         legendLabels=c('Not sig.',
+                         legendLabels=c('Niet sig.',
                                         'Log (base 2) FC',
-                                        'p-value',
-                                        'p-value & Log (base 2) FC'),
+                                        'p-waarde',
+                                        'p-waarde & Log (base 2) FC'),
                          legendPosition = 'right',
                          legendLabSize = 6,
                          legendIconSize = 2,
-                         pCutoff = 0.1, FCcutoff = 1.5))
-  }
+                         pCutoff = 0.1, FCcutoff = 1.5))}
 ```
 
 ```{r}
 # Het maken van de Volcano grafieken
-#deseq.volcano(res = res_control_vs_vaper_shrink, datasetName = "Control - Vaper")
-#deseq.volcano(res = res_control_vs_smoker_shrink, datasetName = "Control - Smoker")
+#deseq.volcano(res = res_control_vs_vaper_shrink, datasetName = "De genen van de groep vaper in vergelijking met #controle")
+#deseq.volcano(res = res_control_vs_smoker_shrink, datasetName = "De genen van de groep smoker in vergelijking #met controle")
 ```
 
-## Venn Diagram
+Nog in te vullen.....
+
+### 5.2 Venn Diagram
+
+Uitleg geven over venn diagram....
 
 ```{r}
 # P-waarde (FDR) van 0.1
 pval_threshold <- 0.1
-# In het originele onderzoek is er geen log fold change gebruikt, maar een fold change.
-# Dus om terug te gaan, log2(1.5)
+# In het originele onderzoek is er geen log fold change gebruikt, 
+# maar een fold change. Dus om terug te gaan, log2(1.5)
 lfc_treshold <- log2(1.5)
 
-vaper.degs <- row.names(res_control_vs_vaper_shrink[which(res_control_vs_vaper_lfc$padj <= pval_threshold & res_control_vs_vaper_shrink$log2FoldChange > 0.05 ), ])
+vaper.degs <- row.names(res_control_vs_vaper_shrink
+                        [which(res_control_vs_vaper_lfc$padj <= pval_threshold & res_control_vs_vaper_shrink$log2FoldChange > 0.05 ), ])
 
-smoker.degs <- row.names(res_control_vs_smoker_shrink[which(res_control_vs_smoker_lfc$padj <= pval_threshold & res_control_vs_smoker_shrink$log2FoldChange > 0.05 ), ])
+smoker.degs <- row.names(res_control_vs_smoker_shrink
+                         [which(res_control_vs_smoker_lfc$padj <= pval_threshold & res_control_vs_smoker_shrink$log2FoldChange > 0.05 ), ])
 ```
+
+Invullen....
 
 ```{r}
 venn.plot <- draw.pairwise.venn(length(vaper.degs),
-                                length(smoker.degs),
-                                length( intersect(vaper.degs, smoker.degs) ),
-                                category = c("Vaper vs Control", "Smoker vs Control"), 
-                                scaled = F,
-                                fill = c("light blue", "pink"), 
-                                alpha = rep(0.5, 2),
-                                cat.pos = c(0, 0))
+                        length(smoker.degs),
+                        length( intersect(vaper.degs, smoker.degs) ),
+                        category = c("vaper vs control", "smoker vs control"), 
+                        scaled = F,
+                        fill = c("light blue", "pink"), 
+                        alpha = rep(0.5, 2),
+                        cat.pos = c(0, 0))
 
 # Plotten van de diadram
 grid.draw(venn.plot)
