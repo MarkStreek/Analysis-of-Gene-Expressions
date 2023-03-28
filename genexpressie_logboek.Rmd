@@ -2,8 +2,12 @@
 title: "Project_logboek_Genexpressie"
 author: "Mark van de Streek"
 date: "`r Sys.Date()`"
-output: pdf_document
-toc: true
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    df_print: paged
+toc: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -348,27 +352,28 @@ Allereerst gaan we een volcano plot maken. Zoals hierboven beschreven kan je in 
 
 ```{r}
 # Defineren van volcano plot functie
-#deseq.volcano <- function(res, datasetName) {
-#  return(EnhancedVolcano(res, x = 'log2FoldChange', y = 'padj',
-#                         lab=rownames(res),
-#                         title = paste(datasetName, ""),
-#                         subtitle = bquote(italic('FDR <= 0.1 and absolute FC >= 1.5')),
-#                         labSize = 3, pointSize = 1.5, axisLabSize=10, titleLabSize=12,
-#                         subtitleLabSize=8, captionLabSize=10,
-#                         legendLabels=c('Not sig.',
-#                                        'Log (base 2) FC',
-#                                        'p-value',
-#                                        'p-value & Log (base 2) FC'),
-#                         legendPosition = 'right',
-#                         legendLabSize = 6,
-#                         legendIconSize = 2,
-#                         pCutoff = 0.1, FCcutoff = 1.5))}
+deseq.volcano <- function(res, datasetName) {
+  return(EnhancedVolcano(res, x = 'log2FoldChange', y = 'padj',
+                         lab=rownames(res),
+                         title = paste(datasetName, ""),
+                         subtitle = bquote(italic('FDR <= 0.1 and absolute FC >= 1.5')),
+                         labSize = 3, pointSize = 1.5, axisLabSize=10, titleLabSize=12,
+                         subtitleLabSize=8, captionLabSize=10,
+                         legendLabels=c('Not sig.',
+                                        'Log (base 2) FC',
+                                        'p-value',
+                                        'p-value & Log (base 2) FC'),
+                         legendPosition = 'right',
+                         legendLabSize = 6,
+                         legendIconSize = 2,
+                         pCutoff = 0.1, FCcutoff = 1.5))
+  }
 ```
 
 ```{r}
 # Het maken van de Volcano grafieken
-#deseq.volcano(res = res_control_vs_vaper_shrink, datasetName = "Control - Vaper")
-#deseq.volcano(res = res_control_vs_smoker_shrink, datasetName = "Control - Smoker")
+deseq.volcano(res = res_control_vs_vaper_shrink, datasetName = "Control - Vaper")
+deseq.volcano(res = res_control_vs_smoker_shrink, datasetName = "Control - Smoker")
 ```
 
 ## Venn Diagram
@@ -385,7 +390,7 @@ vaper.degs <- row.names(res_control_vs_vaper_shrink[which(res_control_vs_vaper_l
 smoker.degs <- row.names(res_control_vs_smoker_shrink[which(res_control_vs_smoker_lfc$padj <= pval_threshold & res_control_vs_smoker_shrink$log2FoldChange > 0.05 ), ])
 ```
 
-```{r fig.cap = "Venn diagram van het aantal DEG's"}
+```{r}
 venn.plot <- draw.pairwise.venn(length(vaper.degs),
                                 length(smoker.degs),
                                 length( intersect(vaper.degs, smoker.degs) ),
