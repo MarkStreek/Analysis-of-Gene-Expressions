@@ -19,6 +19,7 @@ library('PoiClaClu')
 library(pheatmap)
 library('DESeq2')
 library(EnhancedVolcano)
+library(VennDiagram)
 ```
 
 # Gen expressie Logboek
@@ -62,6 +63,7 @@ Onderstaand wordt de data van het bestand ingeladen. Helaas is er in het bestand
 ```{r}
 data <- read.table("data/GSE169757_Partek_Hum_BC_RNA_Jan2018_UnfilteredCounts_82.txt", 
                    header = T, sep = "\t")
+row.names(data) <- data$gene_name
 ```
 
 ```{r}
@@ -303,6 +305,7 @@ Nu er duidelijk is welke stappen we naar op zoek zijn, kunnen we beginnen met he
 Om te beginnen maken we een DESeq object en voeren we hierop de testen uit. Omdat het experiment (maar) drie groepen bevat, voeren we ze allebei uit. Roker tegen controle en vaper tegen controle. Voor de visualisatie is het belangrijk om nog een lfcshrink toe te passen. Deze functie haalt de ruis weg. 
 
 ```{r}
+# Maken van het object
 dds <- DESeqDataSetFromMatrix(countData = floor(data[c(control, smoker, vaper)]),
                               colData = annotation,
                               design= ~ group)
@@ -310,22 +313,23 @@ dds <- DESeqDataSetFromMatrix(countData = floor(data[c(control, smoker, vaper)])
 dds <- DESeq(dds)
 resultsNames(dds)
 
-res_control_vs_smoker <- results(dds, name = "group_Smoker_vs_Control")
-res_control_vs_vaper <- results(dds, name = "group_Vaper_vs_Control")
+# Summary van
+res_control_vs_smoker_lfc <- results(dds, name = "group_Smoker_vs_Control")
+res_control_vs_vaper_lfc <- results(dds, name = "group_Vaper_vs_Control")
 
-res_control_vs_vaper <- lfcShrink(dds, coef = "group_Vaper_vs_Control", type = "apeglm")
-res_control_vs_smoker <- lfcShrink(dds, coef = "group_Smoker_vs_Control", type = "apeglm")
+res_control_vs_vaper_shrink <- lfcShrink(dds, coef = "group_Vaper_vs_Control", type = "apeglm")
+res_control_vs_smoker_shrink <- lfcShrink(dds, coef = "group_Smoker_vs_Control", type = "apeglm")
+
+summary(res_control_vs_smoker_shrink)
+summary(res_control_vs_vaper_shrink)
 
 par(mfrow = c(1, 2))
-plotMA(res_control_vs_vaper, main = "Control - Vaper", ylim = c(-4, 6), alpha = 0.1)
-plotMA(res_control_vs_smoker, main = "Control - Smoker", ylim = c(-4, 6), alpha = 0.1)
+plotMA(res_control_vs_vaper_shrink, main = "Control - Vaper", ylim = c(-4, 6), alpha = 0.1)
+plotMA(res_control_vs_smoker_shrink, main = "Control - Smoker", ylim = c(-4, 6), alpha = 0.1)
 abline(h = c(-1.5, 1.5))
 
 
 # sum(abs(res_control_vs_vaper$log2FoldChange) > 1.5 & res_control_vs_vaper$padj < 0.1, na.rm = T)
-
-summary(res_control_vs_smoker)
-summary(res_control_vs_vaper)
 ```
 
 De genen worden vervolgens geplot in een MA-plot. Wel goed om op te merken is dat er in het originele onderzoek gebruik is gemaakt van een LFC-treshold is gebruikt van 1.5. Deze kan niet worden toegevoegd aan de test. Om de grafiek wat 'duidelijker' te maken zijn er twee lijnen geplot. Een lijn bij -1.5 en 1.5. Alle blauwe stippen die onder/boven deze lijnen liggen kunnen worden beschouwd als DEG. 
@@ -334,6 +338,65 @@ Zoals je kunt zien zijn er heel veel genen met een significantie die net onder d
 
 In de volgende sectie zullen we een vulcano plot behandelen. In dit plot kunnen we wel een grens opgeven voor de LFC. Op deze manier wordt er duidelijker welke genen nou echt DEG's zijn (volgens het originele onderzoek). Zonder deze grens zijn er 5000 DEG's bij de Rokers groep. Dit op een totaalaantal van ~ 38000 genen. Er worden standaard dus erg veel genen gekenmerkd als DEG en het is dus belangrijk om hier nog een extra 'grens' voor toe te voegen. Met deze grens kunnen de genen worden getoond die uitschieten. 
 
+# Analyse en Visualisaties
 
+Nu er een set met DEG's is, kunnen we visualiseren, d.w.z. figuren maken/namaken en we kunnen ook biologische vragen gaan beantwoorden/conclusie trekken. 
+
+## Volcano plot
+
+Allereerst gaan we een volcano plot maken. Zoals hierboven beschreven kan je in een vulcano plot zowel de p-waarde als de LFC-waarde weergeven. Het doel is om vergelijkbare aantal DEG's te krijgen die in het originele onderzoek ook aanwezig waren.
+
+```{r}
+# Defineren van volcano plot functie
+#deseq.volcano <- function(res, datasetName) {
+#  return(EnhancedVolcano(res, x = 'log2FoldChange', y = 'padj',
+#                         lab=rownames(res),
+#                         title = paste(datasetName, ""),
+#                         subtitle = bquote(italic('FDR <= 0.1 and absolute FC >= 1.5')),
+#                         labSize = 3, pointSize = 1.5, axisLabSize=10, titleLabSize=12,
+#                         subtitleLabSize=8, captionLabSize=10,
+#                         legendLabels=c('Not sig.',
+#                                        'Log (base 2) FC',
+#                                        'p-value',
+#                                        'p-value & Log (base 2) FC'),
+#                         legendPosition = 'right',
+#                         legendLabSize = 6,
+#                         legendIconSize = 2,
+#                         pCutoff = 0.1, FCcutoff = 1.5))}
+```
+
+```{r}
+# Het maken van de Volcano grafieken
+#deseq.volcano(res = res_control_vs_vaper_shrink, datasetName = "Control - Vaper")
+#deseq.volcano(res = res_control_vs_smoker_shrink, datasetName = "Control - Smoker")
+```
+
+## Venn Diagram
+
+```{r}
+# P-waarde (FDR) van 0.1
+pval_threshold <- 0.1
+# In het originele onderzoek is er geen log fold change gebruikt, maar een fold change.
+# Dus om terug te gaan, log2(1.5)
+lfc_treshold <- log2(1.5)
+
+vaper.degs <- row.names(res_control_vs_vaper_shrink[which(res_control_vs_vaper_lfc$padj <= pval_threshold & res_control_vs_vaper_shrink$log2FoldChange > 0.05 ), ])
+
+smoker.degs <- row.names(res_control_vs_smoker_shrink[which(res_control_vs_smoker_lfc$padj <= pval_threshold & res_control_vs_smoker_shrink$log2FoldChange > 0.05 ), ])
+```
+
+```{r fig.cap = "Venn diagram van het aantal DEG's"}
+venn.plot <- draw.pairwise.venn(length(vaper.degs),
+                                length(smoker.degs),
+                                length( intersect(vaper.degs, smoker.degs) ),
+                                category = c("Vaper vs Control", "Smoker vs Control"), 
+                                scaled = F,
+                                fill = c("light blue", "pink"), 
+                                alpha = rep(0.5, 2),
+                                cat.pos = c(0, 0))
+
+# Plotten van de diadram
+grid.draw(venn.plot)
+```
 
 
