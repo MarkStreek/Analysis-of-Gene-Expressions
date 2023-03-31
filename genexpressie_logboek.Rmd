@@ -357,7 +357,7 @@ x <- seq(-4, 4, by = 0.1)
 curve(dnorm(x, 0, 1), from = -4, to = 4, col="darkgreen", add=T, lwd = 2)
 ```
 
-De groene lijn is de normaalverdeling. Zoals je kunt zien is de Fold Change mooi normaal verdeeld op deze data.
+De groene lijn is de normaalverdeling. Zoals je kunt zien is de Fold Change redelijk normaal verdeeld op deze data.
 
 ### 4.3 DEG analyse met behulp van R-paketten
 
@@ -369,41 +369,60 @@ Om te beginnen maken we een DESeq object en voeren we hierop de testen uit. Omda
 # Maken van het object
 dds <- DESeqDataSetFromMatrix(countData = floor(data[c(control, smoker, vaper)]),
                               colData = annotation,
-                              design= ~ group)
+                              design = ~ group)
 
 dds <- DESeq(dds)
 # Deze functie geeft terug welke resulaten er mogelijk zijn met de dataset
-# resultsNames(dds)
+resultsNames(dds)
 ```
 
 Het object is aangemaakt en er is bekend welke testen er uitgevoerd kunnen worden. De twee resultaten kunnen dus gekoppeld worden aan objecten.
 
 ```{r}
-res_control_vs_smoker_lfc <- results(dds, name = "group_Smoker_vs_Control")
-res_control_vs_vaper_lfc <- results(dds, name = "group_Vaper_vs_Control")
+res.smoker.control <- results(dds, name = "group_Smoker_vs_Control")
+res.vaper.control <- results(dds, name = "group_Vaper_vs_Control")
 ```
 
 Voor het maken van de grafieken is het belangrijk om de ruis die komt van de log2 waarden van lfc-waarden, wordt weggefilterd. Dit wordt gedaan met de lfcShrink functie.
 
 ```{r}
-res_control_vs_vaper_shrink <- lfcShrink(dds, coef = "group_Vaper_vs_Control", type = "apeglm")
-res_control_vs_smoker_shrink <- lfcShrink(dds, coef = "group_Smoker_vs_Control", type = "apeglm")
+res.smoker.control <- lfcShrink(dds, coef = "group_Smoker_vs_Control", type = "apeglm")
+res.vaper.control <- lfcShrink(dds, coef = "group_Vaper_vs_Control", type = "apeglm")
 ```
 
 Met de summary functie wordt weergegeven hoeveel DEG's er zijn gevonden. Ook worden hier de percentages bijgegeven.
 
 ```{r}
-summary(res_control_vs_smoker_shrink)
-summary(res_control_vs_vaper_shrink)
+summary(res.smoker.control)
+summary(res.vaper.control)
 ```
 
 Het is nu mogelijk om een MA plot te maken van de objecten.
 
 ```{r}
+# Plots naast elkaar zetten met par()
 par(mfrow = c(1, 2))
-plotMA(res_control_vs_vaper_shrink, main = "Control - Vaper", ylim = c(-4, 6), alpha = 0.1)
-plotMA(res_control_vs_smoker_shrink, main = "Control - Smoker", ylim = c(-4, 6), alpha = 0.1)
+
+# Ma plots maken inclusief de LFC-lijnen bij -1.5 en 1.5
+plotMA(res.vaper.control, 
+       xlab = "Gemiddelde van genormaliseerde tellingen",
+       ylab = "Log Fold Change waarde",
+       ylim = c(-5, 8),
+       colSig = "#83A3EE",
+       alpha = 0.1)
 abline(h = c(-1.5, 1.5))
+
+plotMA(res.smoker.control, 
+       xlab = "Gemiddelde van genormaliseerde tellingen",
+       ylab = "Log Fold Change waarde",
+       ylim = c(-5, 8),
+       colSig = "#83A3EE",
+       alpha = 0.1)
+abline(h = c(-1.5, 1.5))
+mtext("DEG's van de groep vaper vs controle (links) en de groep smoker vs controle (rechts)", 
+      side = 3, 
+      line = -1, 
+      outer = T)
 ```
 
 Wel goed om op te merken is dat er in het originele onderzoek gebruik is gemaakt van een LFC-treshold van 1.5. Deze kan niet worden toegevoegd aan de test. Om de grafiek wat 'duidelijker' te maken zijn er twee lijnen geplot. Een lijn bij -1.5 en 1.5. Alle blauwe stippen die onder/boven deze lijnen liggen kunnen worden beschouwd als DEG. 
@@ -440,8 +459,8 @@ deseq.volcano <- function(res, datasetName) {
 
 ```{r}
 # Het maken van de Volcano grafieken
-#deseq.volcano(res = res_control_vs_vaper_shrink, datasetName = "De genen van de groep vaper in vergelijking met #controle")
-#deseq.volcano(res = res_control_vs_smoker_shrink, datasetName = "De genen van de groep smoker in vergelijking #met controle")
+deseq.volcano(res = res_control_vs_vaper_shrink, datasetName = "De genen van de groep vaper in vergelijking met controle")
+deseq.volcano(res = res_control_vs_smoker_shrink, datasetName = "De genen van de groep smoker in vergelijking met controle")
 ```
 
 Nog in te vullen.....
@@ -457,11 +476,8 @@ pval_threshold <- 0.1
 # maar een fold change. Dus om terug te gaan, log2(1.5)
 lfc_treshold <- log2(1.5)
 
-vaper.degs <- row.names(res_control_vs_vaper_shrink
-                        [which(res_control_vs_vaper_lfc$padj <= pval_threshold & res_control_vs_vaper_shrink$log2FoldChange > 0.05 ), ])
-
-smoker.degs <- row.names(res_control_vs_smoker_shrink
-                         [which(res_control_vs_smoker_lfc$padj <= pval_threshold & res_control_vs_smoker_shrink$log2FoldChange > 0.05 ), ])
+vaper.degs <- row.names(res.vaper.control[which(res.vaper.control$padj <= pval_threshold & abs(res.vaper.control$log2FoldChange > lfc_treshold)), ])
+smoker.degs <- row.names(res.smoker.control[which(res.smoker.control$padj <= pval_threshold & abs(res.smoker.control$log2FoldChange > lfc_treshold)), ])
 ```
 
 Invullen....
@@ -480,4 +496,9 @@ venn.plot <- draw.pairwise.venn(length(vaper.degs),
 grid.draw(venn.plot)
 ```
 
+```{r}
+library(gplots)
+
+venn(list("Vaper vs Control" = vaper.degs, "Smoker vs Control" = smoker.degs), )
+```
 
