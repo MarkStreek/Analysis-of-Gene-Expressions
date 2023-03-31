@@ -488,7 +488,7 @@ venn.plot <- draw.pairwise.venn(length(vaper.degs),
                         length( intersect(vaper.degs, smoker.degs) ),
                         category = c("vaper vs control", "smoker vs control"), 
                         scaled = F,
-                        fill = c("light blue", "pink"), 
+                        fill = c("#eece83", "#83A3EE"), 
                         alpha = rep(0.5, 2),
                         cat.pos = c(0, 0))
 
@@ -497,8 +497,14 @@ grid.draw(venn.plot)
 ```
 
 ```{r}
-library(gplots)
+# data$Gene.Symbol[data$gene_name %in% vaper.degs]
 
-venn(list("Vaper vs Control" = vaper.degs, "Smoker vs Control" = smoker.degs), )
+vaper.degs.write <- sapply(vaper.degs, tools::file_path_sans_ext)
+smoker.degs.write <- sapply(smoker.degs, tools::file_path_sans_ext)
+
+write.table(vaper.degs.write, file = "vaper.degs.txt", row.names = F, quote = F, col.names = F)
+write.table(smoker.degs.write, file = "smoker.degs.txt", row.names = F, quote = F, col.names = F)
+
+
 ```
 
