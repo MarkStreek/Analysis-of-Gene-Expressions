@@ -287,7 +287,8 @@ Het uiteindelijke doel is om genen te vinden die afwijken in expressie van de 'n
 We gaan de data normaliseren door middel van de counts per miljoen. Het aantal counts wordt berekend per miljoen. Deze data transformeren we vervolgens met de log2. Eerder keken we nog naar de lengte van de genen, maar nu kijken we puur alleen naar het aantal counts.
 
 ```{r}
-counts.fpm <- log2( (data[c(control, smoker, vaper)] / (colSums(data[c(control, smoker, vaper)]) / 1e6)) + 1 )
+counts.fpm <- log2( (data[c(control, smoker, vaper)] / 
+                       (colSums(data[c(control, smoker, vaper)]) / 1e6)) + 1 )
 plotDensity(counts.fpm,
 main = "Dichtheidsplot van alle data samples",
 ylab = "Dichtheid")
@@ -327,7 +328,9 @@ Hieronder wordt de Fold Change berekend van de genen in de dataset. Hiervoor wor
 
 ```{r}
 # Het normaliseren van de gefilterde data
-new_data.counts.fpm <- log2( (new_data[c(control, smoker, vaper)] / (colSums(new_data[c(control, smoker, vaper)]) / 1e6)) + 1 )
+new_data.counts.fpm <- log2( (new_data[c(control, smoker, vaper)] / 
+                                (colSums(new_data[c(control, smoker, vaper)]) 
+                                 / 1e6)) + 1 )
 
 # Het berekenen van de ratios
 vaper.means <- rowMeans(new_data.counts.fpm[grep("Vaper", names(new_data.counts.fpm))])
@@ -459,8 +462,10 @@ deseq.volcano <- function(res, datasetName) {
 
 ```{r}
 # Het maken van de Volcano grafieken
-deseq.volcano(res = res.vaper.control, datasetName = "De genen van de groep vaper in vergelijking met controle")
-deseq.volcano(res = res.smoker.control, datasetName = "De genen van de groep smoker in vergelijking met controle")
+#deseq.volcano(res = res.vaper.control, 
+#              datasetName = "De genen van de groep vaper in vergelijking met controle")
+#deseq.volcano(res = res.smoker.control, 
+#              datasetName = "De genen van de groep smoker in vergelijking met controle")
 ```
 
 Zoals beide volcano plots aantonen, zijn er veel genen die binnen de lijnen van de LFC-waardes vallen. Deze genen worden niet beschouwd als DEG. Zoals eerder beschreven werden deze genen wel zo gekenmerkt op basis van alleen de P-waarde. Deze valcano grafieken zijn daarom belangrijk om aan te tonen welke genen als DEG beschouwd kunnen worden. 
@@ -483,6 +488,7 @@ pval_threshold <- 0.1
 lfc_treshold <- log2(1.5)
 
 vaper.degs <- row.names(res.vaper.control[which(res.vaper.control$padj <= pval_threshold & abs(res.vaper.control$log2FoldChange > lfc_treshold)), ])
+
 smoker.degs <- row.names(res.smoker.control[which(res.smoker.control$padj <= pval_threshold & abs(res.smoker.control$log2FoldChange > lfc_treshold)), ])
 ```
 
@@ -520,12 +526,15 @@ Eerst worden alle genen in het juist formaat weggeschreven naar een bestand. Van
 vaper.degs.write <- sapply(vaper.degs, tools::file_path_sans_ext)
 smoker.degs.write <- sapply(smoker.degs, tools::file_path_sans_ext)
 
-write.table(vaper.degs.write, file = "vaper.degs.txt", row.names = F, quote = F, col.names = F)
-write.table(smoker.degs.write, file = "smoker.degs.txt", row.names = F, quote = F, col.names = F)
+write.table(vaper.degs.write, file = "vaper.degs.txt", row.names = F, 
+            quote = F, col.names = F)
+write.table(smoker.degs.write, file = "smoker.degs.txt", row.names = F, 
+            quote = F, col.names = F)
 ```
 
 ```{r}
-DAVID_genes <- read.csv("data/chart_31BB3D290B901680533944143.txt", sep = "\t", header = T)
+DAVID_genes <- read.csv("data/chart_31BB3D290B901680533944143.txt", 
+                        sep = "\t", header = T)
 ```
 
 Uit de analyse op DAVID komt een chart. Deze wordt bovenstaand ingeladen. 
@@ -567,6 +576,8 @@ barplot(-log10(x) ~ DAVID.vaper.terms.split, las = 2, cex.names = 0.5)
 Van alle paden die DAVID gevonden heeft bij de opgegeven DEG's, zijn de p-waarden afgezet tegen de omschrijving van het biologische pad. 
 
 Zoals de barplot aantoont is er één proces die er echt uitschiet: Aminoacyl-tRNA biosynthesis. Het laden van de juiste aminzoren aan de juiste tRNA moleculen is dus verstoord. De p-waarde zegt niks over hoe het proces is ontregeld, alleen dat het zo is. We kunnen dus op deze manier niet meteen zeggen of dit proces een hogere regulatie vertoond of juist een lagere.
+
+## Conclusie
 
 Bij de analyse van de rokers DEG's door DAVID, is er een andere uitslag. Bij de analyse van deze genen kwamen andere processen naar boven. Er is dus een verschil zichtbaar tussen vapen en roken. Beide methoden tasten de genexpressie op andere manieren aan. Zoals eerder opgemerkt is er al veel onderzoek gedaan naar roken en is er dus nader gekeken naar de p-waardes van de vaper groep.
 
