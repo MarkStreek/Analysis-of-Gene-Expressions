@@ -463,11 +463,17 @@ deseq.volcano(res = res.vaper.control, datasetName = "De genen van de groep vape
 deseq.volcano(res = res.smoker.control, datasetName = "De genen van de groep smoker in vergelijking met controle")
 ```
 
-Nog in te vullen.....
+Zoals beide volcano plots aantonen, zijn er veel genen die binnen de lijnen van de LFC-waardes vallen. Deze genen worden niet beschouwd als DEG. Zoals eerder beschreven werden deze genen wel zo gekenmerkt op basis van alleen de P-waarde. Deze valcano grafieken zijn daarom belangrijk om aan te tonen welke genen als DEG beschouwd kunnen worden. 
+
+Het valt verder op dat er veel DEG's aan de rechterkant van het figuur bevinden. Dit bevestigd eerder aangetoonde grafieken, waarin werd weergegeven dat de meeste DEG's een expressie waarde hebben die *hoger* ligt dan de controle groep.
 
 ### 5.2 Venn Diagram
 
-Uitleg geven over venn diagram....
+In de volcano plot kan niet het absolute aantal DEG's worden afgelozen. Om deze reden maken we onderstaand een venn diagram. Dit is een diagram waarin eenvoudig het aantal DEG's kan worden afgelezen. Op deze manier kunnen de verschillen tussen beide groepen ook duidelijker worden. 
+
+Verder is het in onderstaande diagram ook mogelijk om te zien hoeveel genen er overeenkomen. Dat wil zeggen, de hoeveelheid DEG's die gedeeld worden in beide groepen.
+
+Allereerst worden onderstaand de juiste DEG's geselecteerd. Dit gebeurt op basis van p- en lfc-waarde.
 
 ```{r}
 # P-waarde (FDR) van 0.1
@@ -480,7 +486,7 @@ vaper.degs <- row.names(res.vaper.control[which(res.vaper.control$padj <= pval_t
 smoker.degs <- row.names(res.smoker.control[which(res.smoker.control$padj <= pval_threshold & abs(res.smoker.control$log2FoldChange > lfc_treshold)), ])
 ```
 
-Invullen....
+Met de juiste genen kan vervolgens een venn diagram gemaakt worden
 
 ```{r}
 venn.plot <- draw.pairwise.venn(length(vaper.degs),
@@ -496,6 +502,18 @@ venn.plot <- draw.pairwise.venn(length(vaper.degs),
 grid.draw(venn.plot)
 ```
 
+De venn diagram toont aan dat 619 DEG's worden gedeeld in beide groepen. Voor de rokers groep is een aantal van 1383 DEG's uniek. Totaal bevat de groep dus 619 gedeelde + 1383 unieke = 2002 DEG's
+
+### 5.3 Pad analyse
+
+Nu er duidelijk is welke genen als DEG gekenmerkt worden, kunnen we verder kijken naar de biologische achtergrond. De DEG's worden gegroupeerd op basis van biologisch pad. 
+
+We voeren onze DEG's in in een online database genaamd DAVID. DAVID zal per gen kijken bij welk biologisch pad of functie het gen hoort. Er wordt per proces vervolgens ook een p-waarde gegeven. 
+
+Aan de hand van de p-waardes kan aangetoond worden of een proces of pad in je lichaam significant anders verloopt.
+
+Eerst worden alle genen in het juist formaat weggeschreven naar een bestand. Vanuit dit bestand kunnen de genen in DAVID geplaatst worden.
+
 ```{r}
 # data$Gene.Symbol[data$gene_name %in% vaper.degs]
 
@@ -506,13 +524,11 @@ write.table(vaper.degs.write, file = "vaper.degs.txt", row.names = F, quote = F,
 write.table(smoker.degs.write, file = "smoker.degs.txt", row.names = F, quote = F, col.names = F)
 ```
 
-### DAVID
-
-Nog invullen...
-
 ```{r}
 DAVID_genes <- read.csv("data/chart_31BB3D290B901680533944143.txt", sep = "\t", header = T)
 ```
+
+Uit de analyse op DAVID komt een chart. Deze wordt bovenstaand ingeladen. 
 
 ```{r}
 # genes <- c("MT-TG","MT-TR","MT-TY","MT-TI","MT-TV","MT-TH",
@@ -548,10 +564,20 @@ x <- DAVID_genes$PValue[DAVID_genes$Category %in% "KEGG_PATHWAY"]
 barplot(-log10(x) ~ DAVID.vaper.terms.split, las = 2, cex.names = 0.5)
 ```
 
+Van alle paden die DAVID gevonden heeft bij de opgegeven DEG's, zijn de p-waarden afgezet tegen de omschrijving van het biologische pad. 
 
+Zoals de barplot aantoont is er één proces die er echt uitschiet: Aminoacyl-tRNA biosynthesis. Het laden van de juiste aminzoren aan de juiste tRNA moleculen is dus verstoord. De p-waarde zegt niks over hoe het proces is ontregeld, alleen dat het zo is. We kunnen dus op deze manier niet meteen zeggen of dit proces een hogere regulatie vertoond of juist een lagere.
 
+Bij de analyse van de rokers DEG's door DAVID, is er een andere uitslag. Bij de analyse van deze genen kwamen andere processen naar boven. Er is dus een verschil zichtbaar tussen vapen en roken. Beide methoden tasten de genexpressie op andere manieren aan. Zoals eerder opgemerkt is er al veel onderzoek gedaan naar roken en is er dus nader gekeken naar de p-waardes van de vaper groep.
 
+Met deze resultaten kunnen we concluderen dat het proces van Aminoacyl-tRNA biosynthesis in leukocyten bij mensen die vapen verstoord is in vergelijking met mensen die niet vapen. Dit is aangetoond aan de hand van de lage p-waarde. De p waarde was siginficant kleiner dan 0.05 (p-waarde: 0.000000000093).
 
+## Referenties
 
+Voor dit onderzoek zijn uiteraard een aantal belangrijke bronnen gebruikt. Hieronder worden de bronnen weergegeven.
+
+1. DAVID Functional Annotation Bioinformatics Microarray Analysis. (z.d.). https://david.ncifcrf.gov/
+2. I. Love, M., Anders, S., & Huber, W. (2023, 9 maart). Analyzing RNA-seq data with DESeq2. Geraadpleegd op 4 april 2023, van http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html
+3. Kempenaar, M. (2023, 14 februari). B Annotating an RNA-Seq Experiment | Analysis of Gene Expression. https://mkempenaar.github.io/gene_expression_analysis/a2-annotation.html#references
 
 
