@@ -459,8 +459,8 @@ deseq.volcano <- function(res, datasetName) {
 
 ```{r}
 # Het maken van de Volcano grafieken
-deseq.volcano(res = res_control_vs_vaper_shrink, datasetName = "De genen van de groep vaper in vergelijking met controle")
-deseq.volcano(res = res_control_vs_smoker_shrink, datasetName = "De genen van de groep smoker in vergelijking met controle")
+deseq.volcano(res = res.vaper.control, datasetName = "De genen van de groep vaper in vergelijking met controle")
+deseq.volcano(res = res.smoker.control, datasetName = "De genen van de groep smoker in vergelijking met controle")
 ```
 
 Nog in te vullen.....
@@ -504,7 +504,83 @@ smoker.degs.write <- sapply(smoker.degs, tools::file_path_sans_ext)
 
 write.table(vaper.degs.write, file = "vaper.degs.txt", row.names = F, quote = F, col.names = F)
 write.table(smoker.degs.write, file = "smoker.degs.txt", row.names = F, quote = F, col.names = F)
+```
+
+### DAVID
+
+Nog invullen...
+
+```{r}
+DAVID_genes <- read.csv("data/chart_31BB3D290B901680533944143.txt", sep = "\t", header = T)
+head(DAVID_genes)
+```
+
+```{r}
+DAVID_genes[1,]$Genes
+```
+
+```{r}
+genes <- c(
+    "MT-TG",
+    "MT-TR",
+    "MT-TY",
+    "MT-TI",
+    "MT-TV",
+    "MT-TH",
+    "MT-TN",
+    "LARS",
+    "CARS2",
+    "MT-TK",
+    "MT-TL1",
+    "MT-TM",
+    "MT-TW",
+    "MT-TA",
+    "NARS2",
+    "MT-TQ",
+    "MT-TL2",
+    "MT-TC",
+    "MT-TS2")
+
+vaper.degs.lfc <- c()
+
+for (gene in genes) {
+  lfc <- res.vaper.control$log2FoldChange[res.vaper.control@rownames == gene]
+  vaper.degs.lfc <- c(vaper.degs.lfc, lfc)
+}
+
+
+vaper.degs.lfc <- data.frame(ID = DAVID_genes[1,]$Genes, LogFoldChange = vaper.degs.lfc)
+vaper.degs.lfc
+
+write.table(vaper.degs.lfc, file = "vaper.degs.lfc.txt", row.names = T, quote = F, col.names = T)
+
+library(pathview)
+
+pathview(gene.data=vaper.degs.lfc,
+         pathway.id="00970",
+         species="hsa")
 
 
 ```
+
+```{r}
+DAVID.vaper.terms <- DAVID_genes$Term[DAVID_genes$Category %in% "KEGG_PATHWAY"]
+DAVID.vaper.terms.split <- c()
+
+for (term in DAVID.vaper.terms) {
+  splitted <- strsplit(term, ":")[[1]][2]
+  DAVID.vaper.terms.split <- c(DAVID.vaper.terms.split, splitted)
+}
+
+x <- DAVID_genes$PValue[DAVID_genes$Category %in% "KEGG_PATHWAY"]
+
+barplot(-log10(x) ~ DAVID.vaper.terms.split, las = 2, cex.names = 0.5, horiz = T)
+```
+
+
+
+
+
+
+
 
