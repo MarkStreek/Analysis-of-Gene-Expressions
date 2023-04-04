@@ -512,55 +512,26 @@ Nog invullen...
 
 ```{r}
 DAVID_genes <- read.csv("data/chart_31BB3D290B901680533944143.txt", sep = "\t", header = T)
-head(DAVID_genes)
 ```
 
 ```{r}
-DAVID_genes[1,]$Genes
-```
+# genes <- c("MT-TG","MT-TR","MT-TY","MT-TI","MT-TV","MT-TH",
+#            "MT-TN","LARS","CARS2","MT-TK","MT-TL1","MT-TM",
+#            "MT-TW","MT-TA","NARS2","MT-TQ","MT-TL2","MT-TC",
+#            "MT-TS2")
 
-```{r}
-genes <- c(
-    "MT-TG",
-    "MT-TR",
-    "MT-TY",
-    "MT-TI",
-    "MT-TV",
-    "MT-TH",
-    "MT-TN",
-    "LARS",
-    "CARS2",
-    "MT-TK",
-    "MT-TL1",
-    "MT-TM",
-    "MT-TW",
-    "MT-TA",
-    "NARS2",
-    "MT-TQ",
-    "MT-TL2",
-    "MT-TC",
-    "MT-TS2")
+# vaper.degs.lfc <- c()
+# 
+# for (gene in genes) {
+#   lfc <- res.vaper.control$log2FoldChange[res.vaper.control@rownames == gene]
+#   vaper.degs.lfc <- c(vaper.degs.lfc, lfc)
+# }
 
-vaper.degs.lfc <- c()
+# vaper.degs.lfc <- data.frame(LogFoldChange = vaper.degs.lfc)
 
-for (gene in genes) {
-  lfc <- res.vaper.control$log2FoldChange[res.vaper.control@rownames == gene]
-  vaper.degs.lfc <- c(vaper.degs.lfc, lfc)
-}
-
-
-vaper.degs.lfc <- data.frame(ID = DAVID_genes[1,]$Genes, LogFoldChange = vaper.degs.lfc)
-vaper.degs.lfc
-
-write.table(vaper.degs.lfc, file = "vaper.degs.lfc.txt", row.names = T, quote = F, col.names = T)
-
-library(pathview)
-
-pathview(gene.data=vaper.degs.lfc,
-         pathway.id="00970",
-         species="hsa")
-
-
+# pathview(gene.data=vaper.degs.lfc,
+#          pathway.id="00970",
+#          species="hsa")
 ```
 
 ```{r}
@@ -574,7 +545,7 @@ for (term in DAVID.vaper.terms) {
 
 x <- DAVID_genes$PValue[DAVID_genes$Category %in% "KEGG_PATHWAY"]
 
-barplot(-log10(x) ~ DAVID.vaper.terms.split, las = 2, cex.names = 0.5, horiz = T)
+barplot(-log10(x) ~ DAVID.vaper.terms.split, las = 2, cex.names = 0.5)
 ```
 
 
