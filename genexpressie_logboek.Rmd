@@ -24,6 +24,7 @@ library(pheatmap)
 library('DESeq2')
 library(EnhancedVolcano)
 library(VennDiagram)
+library(tidyverse)
 ```
 
 # Gen expressie Logboek
@@ -532,32 +533,14 @@ write.table(smoker.degs.write, file = "smoker.degs.txt", row.names = F,
             quote = F, col.names = F)
 ```
 
+DAVID gaat kijken of de opgegeven DEG's voorkomen in processen in het menselijk lichaam. Er wordt ook gegeven hoeveel genen hier betrokken bij zijn. Tot slot wordt er een p-waarde gegeven. Deze waarde geeft aan hoe significant het is, dat dit proces ontregeld is. Let op dat deze waarde niet aangeeft in welke richting dit proces is ontregeld. Deze resultaten kun je downloaden. Onderstaand wordt het bestand ingeladen waar deze resultaten in staan.
+
 ```{r}
 DAVID_genes <- read.csv("data/chart_31BB3D290B901680533944143.txt", 
                         sep = "\t", header = T)
 ```
 
-Uit de analyse op DAVID komt een chart. Deze wordt bovenstaand ingeladen. 
-
-```{r}
-# genes <- c("MT-TG","MT-TR","MT-TY","MT-TI","MT-TV","MT-TH",
-#            "MT-TN","LARS","CARS2","MT-TK","MT-TL1","MT-TM",
-#            "MT-TW","MT-TA","NARS2","MT-TQ","MT-TL2","MT-TC",
-#            "MT-TS2")
-
-# vaper.degs.lfc <- c()
-# 
-# for (gene in genes) {
-#   lfc <- res.vaper.control$log2FoldChange[res.vaper.control@rownames == gene]
-#   vaper.degs.lfc <- c(vaper.degs.lfc, lfc)
-# }
-
-# vaper.degs.lfc <- data.frame(LogFoldChange = vaper.degs.lfc)
-
-# pathview(gene.data=vaper.degs.lfc,
-#          pathway.id="00970",
-#          species="hsa")
-```
+We willen graag kijken welke paden in het lichaam ontregeld zijn. Hiervoor moeten we dus kijken naar de p-waardes. Onderstaand wordt de juiste informatie verkregen om een figuur te maken, waarin de p-waardes worden afgezet tegen de pathway titels.
 
 ```{r}
 DAVID.vaper.terms <- DAVID_genes$Term[DAVID_genes$Category %in% "KEGG_PATHWAY"]
@@ -568,9 +551,17 @@ for (term in DAVID.vaper.terms) {
   DAVID.vaper.terms.split <- c(DAVID.vaper.terms.split, splitted)
 }
 
-x <- DAVID_genes$PValue[DAVID_genes$Category %in% "KEGG_PATHWAY"]
+DAVID.p.values <- DAVID_genes$PValue[DAVID_genes$Category %in% "KEGG_PATHWAY"]
+DAVID.df <- as.data.frame(DAVID.p.values, row.names = DAVID.vaper.terms.split)
+```
 
-barplot(-log10(x) ~ DAVID.vaper.terms.split, las = 2, cex.names = 0.5)
+Vervolgens wordt een plot gemaakt van het dataframe.
+
+```{r}
+ggplot(DAVID.df) + geom_bar(aes(x = rownames(DAVID.df),
+                          y = -log10(DAVID.p.values),
+                          fill = -log10(DAVID.p.values)), stat = 'identity') +
+                     coord_flip() + scale_fill_gradient(low = "#eece83", high = "#83A3EE") + labs(title = "P-waardes van de KEGG pathways", subtitle = "-log10 P-waardes uitgezet tegen de pathway titels") + xlab("Titel van de pathways") + ylab("-10log van de P-waardes")
 ```
 
 Van alle paden die DAVID gevonden heeft bij de opgegeven DEG's, zijn de p-waarden afgezet tegen de omschrijving van het biologische pad. 
