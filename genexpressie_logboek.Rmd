@@ -267,7 +267,8 @@ En natuurlijk het maken van de grafiek.
 coldata <- names(data[c(control, smoker, vaper)])
 ggplot(mdsPoisData, aes(x_coord, y_coord, color = group, label = coldata)) + 
   geom_text(size = 4) +
-  ggtitle('Multi Dimensional Scaling') +
+  ggtitle('Multi Dimensional Scaling van alle groepen', 
+          subtitle = "De afstanden tussen de samples m.b.v. poisson distance") +
   labs(x = "Poisson Distance", y = "Poisson Distance") +
  theme_bw()
 
@@ -463,10 +464,10 @@ deseq.volcano <- function(res, datasetName) {
 
 ```{r}
 # Het maken van de Volcano grafieken
-#deseq.volcano(res = res.vaper.control, 
-#              datasetName = "De genen van de groep vaper in vergelijking met controle")
-#deseq.volcano(res = res.smoker.control, 
-#              datasetName = "De genen van de groep smoker in vergelijking met controle")
+deseq.volcano(res = res.vaper.control, 
+              datasetName = "De genen van de groep vaper in vergelijking met controle")
+deseq.volcano(res = res.smoker.control, 
+              datasetName = "De genen van de groep smoker in vergelijking met controle")
 ```
 
 Zoals beide volcano plots aantonen, zijn er veel genen die binnen de lijnen van de LFC-waardes vallen. Deze genen worden niet beschouwd als DEG. Zoals eerder beschreven werden deze genen wel zo gekenmerkt op basis van alleen de P-waarde. Deze valcano grafieken zijn daarom belangrijk om aan te tonen welke genen als DEG beschouwd kunnen worden. 
