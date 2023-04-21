@@ -502,9 +502,11 @@ pval_threshold <- 0.1
 # maar een fold change. Dus om terug te gaan, log2(1.5)
 lfc_treshold <- log2(1.5)
 
-vaper.degs <- row.names(res.vaper.control[which(res.vaper.control$padj <= pval_threshold & abs(res.vaper.control$log2FoldChange > lfc_treshold)), ])
+vaper.degs <- row.names(res.vaper.control[which(res.vaper.control$padj <= 
+     pval_threshold & abs(res.vaper.control$log2FoldChange > lfc_treshold)), ])
 
-smoker.degs <- row.names(res.smoker.control[which(res.smoker.control$padj <= pval_threshold & abs(res.smoker.control$log2FoldChange > lfc_treshold)), ])
+smoker.degs <- row.names(res.smoker.control[which(res.smoker.control$padj <= 
+    pval_threshold & abs(res.smoker.control$log2FoldChange > lfc_treshold)), ])
 ```
 
 Met de juiste genen kan vervolgens een venn diagram gemaakt worden
@@ -604,7 +606,7 @@ In het refererende artikel naar dit onderzoek werd niet specifiek vermeld dat de
 Helaas was het niet meer mogelijk om verdere analyses uit te voeren naar de processen. Kort literair onderzoek toonde bijvoorbeeld aan dat er handvol onderzoeken zijn waar vergelijkbare resultaten werden gevonden. Bijvoorbeeld een onderzoek in het tijdschrift PLoS One in 2018. Dit onderzoek toonde aan dat de synthese van tRNA was verstoord in longcellen bij mensen die vapen (zie referenties). Een vervolgstap voor dit onderzoek zou bijvoorbeeld kunnen zijn om aan te tonen welke genen precies ontregeld zijn. En ook vooral *hoe* deze ontregeld zijn. 
 
 
-Tot slot wil ik nog terug komen op de kwaliteit/verdeling controle. Door de vele samples benoemde ik eerder al dat het mogelijk was om data te verwijderen. Uiteindelijk is dit niet gebeurt bij het onderzoek. Het was misschien 'beter' geweest om nog meer te kijken naar deze samples. Er waren wel een paar uitschieters die verwijderd konden worden.
+Tot slot wil ik nog terug komen op de kwaliteit/verdeling controle. Door de vele samples benoemde ik eerder al dat het mogelijk was om data te verwijderen. Uiteindelijk is dit niet gebeurt bij het onderzoek. Het was misschien 'beter' geweest om nog meer te kijken naar samples. Er waren wel een paar uitschieters die wellicht verwijderd konden worden.
 
 \newpage
 
