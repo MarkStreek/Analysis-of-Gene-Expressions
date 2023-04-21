@@ -27,27 +27,31 @@ library(VennDiagram)
 library(tidyverse)
 ```
 
+\newpage
+
 # Gen expressie Logboek
 
-Het doel van dit logboek is om het onderzoek wat benoemd wordt te reproduceren. Verder wordt er gekeken of er nog meer biologische vragen beantwoordt kunnen worden, die de onderzoekers niet hebben behandeld.
+Het doel van dit logboek is om het onderzoek wat onderstaand benoemd wordt te reproduceren. Verder wordt er gekeken of er nog meer biologische processen opvallen.
 
-Het onderzoek gaat over het roken van sigaretten en de elektronische sigaret, ook wel de vape genoemd. In het onderzoek is gebruikt gemaakt van RNA-seq data. Er is dus gekeken naar expressie van bepaalde genen. Om precies te zijn is er gekeken naar genen die aanwezig zijn in leukocyten (witte bloedcellen).
+Het onderzoek gaat over het roken van sigaretten en de elektronische sigaret, ook wel de vape genoemd. In het onderzoek is gebruikt gemaakt van RNA-seq data. Er is dus gekeken naar expressie van bepaalde genen. Om precies te zijn is gekeken naar genen die aanwezig zijn in leukocyten (witte bloedcellen).
 
 ## Het onderzoek 
 
-Er is gekeken naar de activiteit van genen van de volgende groepen mensen:
+Er is gekeken naar RNA expressie van de volgende groepen mensen:
 
 -   Vapers (mensen die een elektronische sigaret roken)
 -   Mensen die de traditionele sigaret roken
 -   Mensen die geen tabaksproducten gebruiken
 
-Om mensen te verkrijgen voor het onderzoek werd er om te beginnen een online vragenlijst gemaakt. Vervolgens werd er voor deze vragenlijst reclame gemaakt online, op bijvoorbeeld Reddit en Twitter. Aan de hand van de deze vragenlijst werden de mensen die geschikt leken voor het onderzoek uitgenodigd voor een gesprek. In dit gepsprek werden nog een aantal vragen en checklists gemaakt om er zeker van te zijn dat de persoon geschikt is voor het onderzoek.
+De mensen die tradionele sigaretten roken, worden in het onderzoek de 'smokers' groep gemoed. De mensen die niet roken worden ook wel de controle-groep genoemd.
+
+Om mensen te werven voor het onderzoek werd er om te beginnen een online vragenlijst gemaakt. Vervolgens is er voor deze vragenlijst online reclame gemaakt. Denk hierbij aan Reddit en Twitter, etc. Aan de hand van de deze vragenlijst werden de mensen die geschikt leken voor het onderzoek uitgenodigd voor een gesprek. In dit gepsprek werden nog een aantal vragen en checklists gemaakt, om er zeker van te zijn dat de persoon geschikt is voor het onderzoek.
 
 Uit de resultaten bleek dat de mensen die op dit moment Vapen, maar vroger niet rookten, een significant andere genregulatie hebben ten opzichte van mensen uit de controle groep. Ook mitochondriale genen en immuunresponsgenen waren significant ontregeld.
 
 ### Verdeling van de groepen
 
-In alle verschillende groepen waren een aantal mensen die voor het onerzoek werden gebruikt. Onderstaand de aantallen in een kleine tabel.
+In alle verschillende groepen waren een aantal mensen die aan het onderzoek hebben deelgenomen. Onderstaand de aantallen in een tabel.
 
 | Vapers | Traditionele rokers | Niet-rokers |
 |--------|---------------------|-------------|
@@ -55,21 +59,23 @@ In alle verschillende groepen waren een aantal mensen die voor het onerzoek werd
 
 : Aantal mensen per groep
 
-Er werd bij de deelnemers ook gekeken naar geslacht, leeftijd, etniciteit, rassen en ook naar mensen die kunnen lezen en schrijven in het Engels. Het onderzoek vond plaats in Los Angeles. 
+Er werd bij de deelnemers ook gekeken naar geslacht, leeftijd, etniciteit, ras en ook of de mensen goed konden lezen/schrijven in het Engels. Het onderzoek vond plaats in Los Angeles, aan de University of Southern California.
 
 De opzet van het onderzoek was om de verschillen tussen alle drie de groepen duidelijk weer te geven. In vele eerdere onderzoeken werden vaak deelnemers gekozen die vapen, maar vaak met een geschiedenis in andere rookgewoonten. Er namen dus mensen deel aan het onderzoek die eerder traditionele sigaretten rookten en op latere tijd zijn overgestapt naar elektronische sigaretten. 
 
-De groep die werd geclassificeerd als vapers in dit onderzoek heeft in de 6 maanden voor het onderzoek geen traditionele sigaret gebruikt. De onderzoekers hebben bewust voor een periode van 'maar' 6 maanden gekozen, omdat de elektronische sigaret nog niet zo heel lang bestaat. door het kiezen van een periode van 6 maanden, zijn er meer mensen die deel konden nemen aan het onderzoek. Voor de traditionele rokers groep werd een periode van 1 jaar gebruikt voor deelname. 
+De groep die werd geclassificeerd als vapers in dit onderzoek heeft in de 6 maanden voor het onderzoek geen traditionele sigaret gebruikt. De onderzoekers hebben bewust voor een periode van 'maar' 6 maanden gekozen, omdat de elektronische sigaret nog niet zo heel lang bestaat. door het kiezen van een periode van 6 maanden, zijn er meer mensen die deel konden nemen aan het onderzoek.
 
 Met behulp van bioinformatische bevindingen zijn in dit onderzoek onderscheid gemaakt tussen gezonde volwassen vapers, met en zonder geschiedenis van roken, en 'exclusieve' sigaretten rokers. Ook is specifiek de expressie van genen in rokers (zowel e-sigaret als traditionele rokers) vergeleken met niet-rokers.
 
-## 3. Verkenning van de data
+\newpage
 
-In de eerste sectie worden de verkennende data analyses uitgevoerd. Er wordt dus bijvoorbeeld gekeken naar de verdeling van de data, maar ook naar bijvoorbeeld de kwaliteit van de data. In het laatste gedeelte van deze sectie wordt een normalisatie uitgevoerd.
+## 1. Verkenning van de data
 
-### 3.1 Inladen van de data
+In de eerste sectie worden de verkennende data analyses uitgevoerd. Er wordt bijvoorbeeld gekeken naar de verdeling van de data, maar ook naar de kwaliteit. In het laatste gedeelte van deze sectie wordt een normalisatie uitgevoerd.
 
-Onderstaand wordt de data van het bestand ingeladen. Helaas is er in het bestand nog niet duidelijk welke samples precies bij welke groep horen. Vandaar dat er nog een aantal stappen moeten worden uitgevoerd om de juiste namen bij de juiste samples te krijgen. De data betreft ongefilterde tellingen van de genexpressie.
+### 1.1 Inladen van de data
+
+Onderstaand wordt de data van het bestand ingeladen. In het bestand staan de ongefilterde ruwe counts van de genexpressie. Helaas is er in het bestand nog niet duidelijk welke samples precies bij welke groep horen. Vandaar dat er nog een aantal stappen moeten worden uitgevoerd om de juiste namen bij de juiste samples te krijgen. Om dit probleem op te lossen kijken naar het GEO-id. Met dit ID kunnen we de juiste namen ophalen uit een object.
 
 ```{r}
 data <- read.table(
@@ -111,15 +117,15 @@ unique_group_names <- make.unique(all_modified_group_names, sep = "_")
 names(data)[9:ncol(data)] <- unique_group_names
 ```
 
-### 3.2 Eerste kijk op data
+### 1.2 Eerste kijk op data
 
-Nu de data goed is ingeladen met alle juiste namen kunnen we kijken hoe het precies er uit ziet. Ook kunnen we kijken wat het precieze aantal rijen en kolommen zijn, ook wel de dimenties. 
+Nu de data goed is ingeladen met alle juiste namen, kunnen we kijken hoe het er precies uit ziet. Ook kunnen we kijken wat het precieze aantal rijen en kolommen zijn, ook wel de dimenties. 
 
 ```{r}
 pander(head(data[1:4, c(1, 2, 8, 9, 10, 11)]))
 ```
 
-In de data zit de volgende informatie: chromosome, start- en stop-positie, streng, gen symbool/gen naam, havana gen en natuurlijk de samples. Van elke sample is dus meer informatie op te zoeken dan simpelweg alleen de telwaarde. De havana gen kolom is een kolom die unieke waardes bevat die verwijzen naar een specifiek gen, dat op een specifieke locatie op het menselijk genoom ligt. De waardes zijn geannoteerd door het HAVANA-project, om genen, exonen, etc. op het menselijk genoom te identificeren.
+In de dataset zijn de volgende kolommen aanwezig: chromosoom, start- en stop-positie, streng, gen symbool/gen naam, havana gen en natuurlijk de samples. Van elke sample is dus meer informatie op te zoeken dan simpelweg alleen de telwaarde. De havana gen kolom is een kolom die unieke waardes bevat die verwijzen naar een specifiek gen, dat op een specifieke locatie op het menselijk genoom ligt. De waardes zijn geannoteerd door het HAVANA-project.
 
 ```{r}
 dims <- dim(data)
@@ -129,6 +135,7 @@ sprintf("Aantal rijen: %.f en aantal kolommen: %.f", dims[1], dims[2])
 We weten nu hoe de data eruit ziet en hoe groot het precies is. Vanaf kolom nummer negen beginnen de 'samples'. De samples staan dus niet onder elkaar, maar naast elkaar. 
 
 #### Classificatie van variabelen
+
 
 Omdat we niet de hele tijd willen opzoeken welke kolomnummers bij welke groep hoeren, gaan we dit defineren. Op deze manier kunnen we makkelijk een variabel invullen om vervolgens snel alle data van de bijhorende groep te krijgen. 
 
@@ -140,27 +147,27 @@ control <- grep("Control", names(data))
 
 > Grep() geeft de nummers van kolommen terug waar het woord in voorkomt. 
 
-### 3.3 Verdeling van de data
+### 1.3 Verdeling van de data
 
-De groepen zijn nu geclassificeerd en we kunnen dus kijken hoe de data is verdeeld. We kunnen het duidelijk weergeven op twee manieren. Onderstaand worden er twee figuren gemaakt om te kijken hoe de data verdeeld is; een boxplot en een dichtheidsplot.
+De groepen zijn nu geclassificeerd en we kunnen kijken hoe de data is verdeeld. We kunnen dit duidelijk weergeven op twee manieren, een boxplot en een dichtheidsplot.
 
-#### 3.3.1 Boxplot
+#### 1.3.1 Boxplot
 
-Allereerst een boxplot. Als de boxen van de figuren allemaal rond een lijn zitten, is de data goed dicht bij elkaar. Een probleem van de 'ruwe' dat is de hoeveelheid nullen. Deze nullen 'trekken' de andere waarden behoorlijk naar beneden. De boxplot heeft geen details meer en zegt dan niks meer.
+Allereerst een boxplot. Als de boxen/strepen van de figuren allemaal rond één lijn zitten, is de data dicht bij elkaar. Een probleem van de 'ruwe data' is de hoeveelheid nullen. Deze nullen 'trekken' de andere waarden behoorlijk naar beneden. De boxplot heeft dan geen details meer en zegt dan niks meer.
 
 Om dit probleem op te lossen, moeten we alle waarden met 0 'wegfilteren'. Dit is makkelijk te doen met een log2 transformatie. Het bereik tussen de samples wordt op deze manier kleiner. De waarden met 0 domineren minder in de data.
 
-Onderstaand de boxplot van de controle groep, met getransformeerde data.
+Onderstaand de boxplot van de vaper groep, met getransformeerde data.
 
 ```{r}
-boxplot(log2(data[control] + 1), las = 2, col = "#83A3EE", 
-        main = "log2 transformatie van de verdeling van de control groep", 
+boxplot(log2(data[vaper] + 1), las = 2, col = "#83A3EE", 
+        main = "log2 transformatie van de verdeling van de vaper groep", 
         ylab = "Aantal RNA")
 ```
 
-Zoals je kunt zien op het figuur liggen alle boxen behoorlijk dicht bij elkaar. Je zou dus zeggen dat deze data goed is verdeeld. Echter is dit nog maar een simpele log2 transformatie en kunnen we dus nog verder kijken naar normalisatie. Uiteraard kun je ook niet een conclusie trekken van één figuur.
+Zoals je kunt zien op het figuur liggen alle boxen behoorlijk dicht bij elkaar. Ook liggen de zwarte strepen behoorlijk op één lijn. Dit zijn de medianen. Toch zijn er wel een paar uitschieters. Deze zouden de data negatief kunnen beïnvloeden. 
 
-#### 3.3.2 Dichtheidsplot
+#### 1.3.2 Dichtheidsplot
 
 Een andere manier om uitschieters in de data weer te geven is een dichtheids grafiek. Dit plot geeft ook de verdeling van de data weer. Als alle lijnen van de grafiek op elkaar liggen, is de data goed verdeeld. Eventuele uitschieters zijn goed zichtbaar. We willen dus in de grafiek zo min mogelijk lijnen zien die afwijken van de andere lijnen.
 
@@ -172,13 +179,13 @@ xlab = "Log2 van de data")
 abline(v = -2, col = "red", lwd = 1, lty = 1)
 ```
 
-Zoals je kunt zien zit er een hele groot piek links van de rode lijn. Zoals eerder opgemerkt bevat de data heel veel nullen. De data is getransformeerd. De log2 van 0.05 is ~ -4.3. Deze piek zijn dus alle waarden met nul en kunnen genegeerd worden (daarom is er om die reden ook een rode lijn geplaatst).
+Zoals je kunt zien zit er een hele groot piek links van de rode lijn. Zoals eerder opgemerkt bevat de data heel veel nullen. De data is getransformeerd. De log2 van 0.05 is ~ -4.3. Deze piek zijn dus alle waarden met nul (daarom is er ook een rode lijn geplaatst). Deze waarden kunnen voor nu genegeerd worden.
 
 In de figuur is op twee plekken een duidelijk ander verloop te zien. Aan het begin en aan het einde van de stijging is andere verloop tussen de samples. Hier is de data dus niet helemaal gelijk verdeeld. Na het normaliseren van de data is het mogelijk om eventuele afwijkende samples weg te gooien, om deze uitschieters eruit te filteren.
 
-#### 3.3.3 Staafdiagram
+#### 1.3.3 Staafdiagram
 
-Een laastste methode die we gebruiken om te kijken is een staafdiagram van het aantal reads. We gebruiken de functie colsums om alle waarden op te tellen. Het doel van dit figuur is het prijsgeven van het aantal reads per sample. Het zegt dus iets over de dekking van de data.
+Bij de laatste methode gaan we kijken naar de dekking van de data. Dit doen we met behulp van een staafdiagram van het aantal reads. We gebruiken de functie colsums om alle waarden op te tellen. Het doel van dit figuur is om het het aantal reads per sample weer te geven.
 
 ```{r}
 barplot(colSums(data[c(control, smoker, vaper)]) / 1e6,
@@ -190,12 +197,13 @@ barplot(colSums(data[c(control, smoker, vaper)]) / 1e6,
         col = "#83A3EE")
 ```
 
+Zoals zichtbaar is er voor elke sample een behoorlijke dekking. Er lijken dus geen samples aanwezig te zijn die te 'weinig' dekking hebben.
 
-### 3.4 Normalisatie van de data en de afstand tussen de samples
+### 1.4 Normalisatie van de data en de afstand tussen de samples
 
 Om te kijken of de data ver uit elkaar ligt, maken we twee figuren. We berekenen de afstanden tussen de datapunten en plotten dit.
 
-Om zoveel mogelijk ruis uit de data te halen, wordt de data genormaliseerd. De gegevens worden aangepast om er voor te zorgen dat ze gelijk zijn. Onderstaand zal er een simpele normalisatie worden uitgevoerd met het DESeq2 pakket. De meest basale vorm van normalisatie wordt toegepast. Er wordt onder andere genormaliseerd op basis van gen-lengte.
+Om zoveel mogelijk ruis uit de data te halen, wordt er genormaliseerd. Dit betekent dat de gegevens worden aangepast om er voor te zorgen dat de data meer gelijk is. Onderstaand zal er een simpele normalisatie worden uitgevoerd met het DESeq2 pakket. De meest basale vorm van normalisatie wordt toegepast. Er wordt onder andere genormaliseerd op basis van genlengte.
 
 ```{r}
 # Maken van het DESEQ object
@@ -209,11 +217,11 @@ rld.dds <- vst(ddsMat)
 rld <- assay(rld.dds)
 ```
 
-#### 3.4.1 Afstanden weergeven met heatmap
+#### 1.4.1 Afstanden weergeven met heatmap
 
-Nu de data genormaliseerd is, kunnen de afstanden berekend worden tussen de samples om aan te tonen hoe dicht de data bij elkaar ligt. Een mooie manier om de afstanden weer te geven is een heatmap. In een heatmap zijn de waarden die dicht bij elkaar liggen rood en de waarden die verder weg liggen blauw. De heatmap wordt gemaakt met de pheatmap package.
+Nu de data genormaliseerd is, kunnen de afstanden tussen de samples berekend worden om aan te kijken hoe dicht de data bij elkaar ligt. Een manier om de afstanden weer te geven is een heatmap. In een heatmap zijn de waarden die dicht bij elkaar liggen rood en de waarden die verder weg liggen blauw. De heatmap wordt gemaakt met de pheatmap package.
 
-```{r}
+```{r echo = T, results = 'hide'}
 # Berekenen van de afstanden
 sampledists <- dist(t(rld))
 sampleDistMatrix <- as.matrix(sampledists)
@@ -238,9 +246,9 @@ cex = .5,
 main = "Sample Distances")
 ```
 
-Door de vele aanwezige samples is de heatmap zeer lastig af te lezen. Wel kun je mooi zien dat de eerste vier samples verder wegliggen dan de andere samples. Het is echter lastig om hier meer over te vertellen, omdat er zoveel samples aanwezig zijn. 
+Door de vele aanwezige samples is de heatmap zeer lastig af te lezen. Wel kun je zien dat de eerste vier samples verder wegliggen van de andere samples. Het is echter lastig om hier meer over te vertellen, omdat er zoveel samples aanwezig zijn. 
 
-#### 3.4.2 Multi-dimensionele schaling (MDS)
+#### 1.4.2 Multi-dimensionele schaling (MDS)
 
 Op de data kunnen we ook multi-dimensionale schaling (MDS) toepassen. Dit is vergelijkbaar met de heatmap, maar hierbij worden de afstanden op een andere manier berekend. Bij MDS wordt Poisson afstandsberekening toegepast. Er wordt gekeken welke genen bij elkaar horen. De genen die bij elkaar horen, vormen een groepje in de grafiek.
 
@@ -274,19 +282,21 @@ ggplot(mdsPoisData, aes(x_coord, y_coord, color = group, label = coldata)) +
 
 ```
 
-Zoals je kunt zien zijn er heel veel samples die verspreid zijn. Er zijn niet echt groepen. Toch kun je duidelijk zien dat de groepen vaper en control samen een groep vormen met blauw en groen. Er zijn van de rokers groep wel een aantal samples die ook in de groep vallen, maar dat zijn er niet veel. In de rokers groep zijn een aantal individuele punten die ver liggen van de andere waarden. Dit kan bruikbare data zijn om aan te tonen dat een gen/sample een specifieke afwijking heeft in genexpressie.
+Zoals je kunt zien zijn er heel veel samples die verspreid zijn. Er zijn niet echt groepen. Toch kun je duidelijk zien dat de groepen vaper en control samen een groep vormen met blauw en groen. Er zijn van de smokers groep wel een aantal samples die ook in de groep vallen, maar dat zijn er niet veel. De smokers groep lijkt wat meer een afwijkend patroon aan te nemen richting rechts. Deze samples staan dus iets verder van de controle/vapers af.
 
-## 4 Differentieel tot expressie gebrachte genen (DEG's)
+\newpage
+
+## 2 Differentieel tot expressie gebrachte genen (DEG's)
 
 In deze sectie gaan we kijken naar DEG's. Een DEG is een gen die met expressie afwijkt van normale genen. Een DEG is afhankelijk van de Log fold change waarde (LFC) en de p-waarde. Voordat we alle gegevens meteen in het pakket gooien, voeren we eerst 'handmatig' een aantal stappen uit.
 
-### 4.1 Voorbewerking van de data
+### 2.1 Voorbewerking van de data
 
-Het uiteindelijke doel is om genen te vinden die afwijken in expressie van de 'normale' genen. Om dit aan te tonen, voeren we statistische testen uit. Echter zijn de testen heel erg gevoelig voor buitenliggende waarden. Om deze reden voeren we nog een normalisatie uit, maar dan op een andere manier.
+Het uiteindelijke doel is om genen te vinden die afwijken in expressie van de 'controle' genen. Om dit aan te tonen, voeren we statistische testen uit. Echter zijn de testen heel erg gevoelig voor buitenliggende waarden. Om deze reden voeren we nog een normalisatie uit, maar dan op een andere manier.
 
-#### 4.1.1 Normalisatie op basis van reads
+#### 2.1.1 Normalisatie op basis van reads
 
-We gaan de data normaliseren door middel van de counts per miljoen. Het aantal counts wordt berekend per miljoen. Deze data transformeren we vervolgens met de log2. Eerder keken we nog naar de lengte van de genen, maar nu kijken we puur alleen naar het aantal counts.
+We gaan de data normaliseren door middel van counts per miljoen. Het aantal counts wordt berekend per miljoen. Deze data transformeren we vervolgens met de log2. Eerder keken we nog naar de lengte van de genen, maar nu kijken we puur alleen naar het aantal counts.
 
 ```{r}
 counts.fpm <- log2( (data[c(control, smoker, vaper)] / 
@@ -297,11 +307,9 @@ ylab = "Dichtheid")
 abline(v = .75, col = "red", lwd = 1, lty = 1)
 ```
 
-de log2 functie kan geen 'overige' waarden transformeren. De eerste negen kolommen worden dus niet meegegeven, alleen de 'echte' data.
-
 In vergelijking met het vorige dichtheidsplot, lijkt deze dat nu beter verdeeld te zijn. De meeste lijnen liggen bijna allemaal op één lijn. De normalisatiemethode is echter wel een beetje 'kaal', omdat het zoals eerder vermeld alleen maar rekening houd met het aantal reads.
 
-#### 4.1.2 Wegfilteren van de nullen in de dataset
+#### 2.1.2 Wegfilteren van de nullen in de dataset
 
 Zoals eerder vermeld zijn er heel veel nullen aanwezig in de dataset. Normaal gesproken gebruik je een pakket in R die deze waarden wegfilterd. Sommige paketten hebben echter deze mogelijkheid niet. Voor nu gaan we onze eigen manier bedenken/onderzoeken. 
 
@@ -318,15 +326,15 @@ cat(sprintf("Data is gefilterd,
         dims[[1]], new_data_dims[[1]], dims[[1]] - new_data_dims[[1]]))
 ```
 
-De genen moeten een expressiewaarde van hoger dan 5 hebben. Dit moet gelden voor 75% van de samples.
+De genen moeten een expressiewaarde hoger dan 5 hebben. Dit moet gelden voor 75% van de samples.
 
 Er zijn heel veel waarden onder de 5 aanwezig in de dataset. Daarom zijn er dus ook veel regels weggefilterd in de 'nieuwe' dataset.
 
-### 4.2 Fold Change Value (FC)
+### 2.2 Fold Change Value (FC)
 
-De FC waarde is de log2 waarde van de experiment/controle ratio. Deze waarde geeft simpelweg aan of een bepaald gen een hogere of lagere expressie heeft. Om te verkomen dat de data erg wordt beinvloed door ruis gebruik je de log2 waarde van de ratio. Dit is de Fold Change Value. Bij een FC-waarde van boven de 1, spreek je van een hogere expressie. Bij een FC-waarde tussen de 0 en 1, spreek je van een mindere expressie. 
+De FC waarde is de log2 waarde van de experiment/controle ratio. Deze waarde geeft simpelweg aan of een bepaald gen een hogere of lagere expressie heeft. Om te verkomen dat de data erg wordt beïnvloed door ruis gebruik je de log2 waarde van de ratio. Dit is de Fold Change Value. Bij een FC-waarde van boven de 1, spreek je van een hogere expressie. Bij een FC-waarde tussen de 0 en 1, spreek je van een mindere expressie. 
 
-Hieronder wordt de Fold Change berekend van de genen in de dataset. Hiervoor wordt de FPM-data gebruikt (zie hierboven). Doordat de eerder genormaliseerde data een iets andere volgorde heeft, worden de kolommen voor de groepen opnieuw gedefineert.
+Hieronder wordt de Fold Change berekend van de genen in de dataset. Vervolgens worden deze waarden weergegeven in een barplot. Hiervoor wordt de FPM-data gebruikt (zie hierboven). Doordat de eerder genormaliseerde data een iets andere volgorde heeft, worden de kolommen voor de groepen opnieuw gedefineert.
 
 ```{r}
 # Het normaliseren van de gefilterde data
@@ -341,7 +349,7 @@ FC <- vaper.means - control.means
 
 ```
 
-Het plotten van de LFC-waarde. Ook wordt er een normaalverdeling toegevoegd in het figuur. Je wil dat de LFC-waarde normaal verdeeld is, omdat de statistische testen zijn op aannames van normaliteit van de gegevens.
+Er wordt ook een normaalverdeling toegevoegd in het figuur. Het doel van deze barplot is om een normaalverdeling te krijgen. Je wil dat de LFC-waarde normaal verdeeld is, omdat de statistische testen zijn op aannames van de normaliteit van gegevens.
 
 ```{r}
 hist(FC, 
@@ -364,13 +372,13 @@ curve(dnorm(x, 0, 1), from = -4, to = 4, col="darkgreen", add=T, lwd = 2)
 
 De groene lijn is de normaalverdeling. Zoals je kunt zien is de Fold Change redelijk normaal verdeeld op deze data.
 
-### 4.3 DEG analyse met behulp van R-paketten
+### 2.3 DEG analyse met behulp van R-paketten
 
-Nu er duidelijk is welke stappen we naar op zoek zijn, kunnen we beginnen met het zoeken naar de DEG's. Het gebruiken hiervoor de DESEQ module. Deze module hebben we ook al eerder gebruikt voor de heatmap en mds-plot. Het annotation dataframe wat we voor de heatmap hebben gebruikt kunnen we nu weer gebruiken. Het is wel belangrijk dat de controle groep als eerste voorkomt in het dataframe.
+Nu er duidelijk is welke stappen we naar op zoek zijn, kunnen we beginnen met het zoeken naar de DEG's. We gebruiken hiervoor de DESEQ2 module. Deze module hebben we ook al eerder gebruikt voor de heatmap en mds-plot. Het annotation dataframe wat we voor de heatmap hebben gebruikt kunnen we nu weer gebruiken. Het is wel belangrijk dat de controle groep als eerste voorkomt in dit dataframe.
 
-Om te beginnen maken we een DESeq object en voeren we hierop de testen uit. Omdat het experiment (maar) drie groepen bevat, voeren we ze allebei uit. Roker tegen controle en vaper tegen controle. Voor de visualisatie is het belangrijk om nog een lfcshrink toe te passen. Deze functie haalt de ruis weg. 
+Om te beginnen maken we een DESeq object en voeren we hierop de testen uit. Omdat het experiment (maar) drie groepen bevat, voeren we ze allebei uit. Roker tegen controle en vaper tegen controle.
 
-```{r}
+```{r echo = T, results = 'hide'}
 # Maken van het object
 dds <- DESeqDataSetFromMatrix(countData = floor(data[c(control, smoker, vaper)]),
                               colData = annotation,
@@ -383,14 +391,14 @@ resultsNames(dds)
 
 Het object is aangemaakt en er is bekend welke testen er uitgevoerd kunnen worden. De twee resultaten kunnen dus gekoppeld worden aan objecten.
 
-```{r}
+```{r echo = T, results = 'hide'}
 res.smoker.control <- results(dds, name = "group_Smoker_vs_Control")
 res.vaper.control <- results(dds, name = "group_Vaper_vs_Control")
 ```
 
-Voor het maken van de grafieken is het belangrijk om de ruis die komt van de log2 waarden van lfc-waarden, wordt weggefilterd. Dit wordt gedaan met de lfcShrink functie.
+Voor het maken van de grafieken is het belangrijk om de ruis die komt van de LFC-waarden, wordt weggefilterd. Dit wordt gedaan met de lfcShrink functie.
 
-```{r}
+```{r echo = T, results = 'hide'}
 res.smoker.control <- lfcShrink(dds, coef = "group_Smoker_vs_Control", type = "apeglm")
 res.vaper.control <- lfcShrink(dds, coef = "group_Vaper_vs_Control", type = "apeglm")
 ```
@@ -402,7 +410,7 @@ summary(res.smoker.control)
 summary(res.vaper.control)
 ```
 
-Het is nu mogelijk om een MA plot te maken van de objecten.
+Het is nu mogelijk om een MA plot te maken van de objecten. In een MA-plot wordt de LFC-waarde (M) afgezet tegen de gemiddelde genexpressie-waarde (A).
 
 ```{r}
 # Plots naast elkaar zetten met par()
@@ -430,18 +438,23 @@ mtext("DEG's van de groep vaper vs controle (links) en de groep smoker vs contro
       outer = T)
 ```
 
-Wel goed om op te merken is dat er in het originele onderzoek gebruik is gemaakt van een LFC-treshold van 1.5. Deze kan niet worden toegevoegd aan de test. Om de grafiek wat 'duidelijker' te maken zijn er twee lijnen geplot. Een lijn bij -1.5 en 1.5. Alle blauwe stippen die onder/boven deze lijnen liggen kunnen worden beschouwd als DEG. 
-Zoals je kunt zien zijn er heel veel genen met een significantie die net onder de grens van 1.5 LFC liggen. Deze genen worden door het MA-plot nog geclasicifeerd als DEG, maar dit is voor het onderzoek niet het geval. 
+Goed om op te merken is dat er in het originele onderzoek gebruik is gemaakt van een LFC-grenswaarde van -1.5/1.5. De MA-plotten geven nu op basis van het eerder gemaakte Deseq-object, de DEG's weer. Voor deze gegevens kan geen grenswaarde worden opgegeven. Dit betekent bijvoorbeeld dat een gen met een LFC-waarde van 1.3 gekenmerkt zal worden als DEG door het Deseq-object. We zullen handmatig een lijn toevoegen bij -1.5 en 1.5 om de grafiek wat 'duidelijker' te maken. Alle blauwe stippen die onder/boven deze lijnen liggen kunnen worden beschouwd als DEG. 
 
-In de volgende sectie zullen we een vulcano plot behandelen. In dit plot kunnen we wel een grens opgeven voor de LFC. Op deze manier wordt er duidelijker welke genen nou echt DEG's zijn (volgens het originele onderzoek). Zonder deze grens zijn er 5000 DEG's bij de Rokers groep. Dit op een totaalaantal van ~ 38000 genen. Er worden standaard dus erg veel genen gekenmerkd als DEG en het is dus belangrijk om hier nog een extra 'grens' voor toe te voegen. Met deze grens kunnen de genen worden getoond die uitschieten. 
+Zoals je kunt zien zijn er heel veel genen met een significantie die net onder de grens van 1.5 LFC liggen.
 
-## 5. Analyse en Visualisaties van de DEG's
+In de volgende sectie zullen we een vulcano plot behandelen. In dit plot kan wel een grens opgeven voor de LFC. Op deze manier wordt er duidelijker welke genen nou echt DEG's zijn (volgens het originele onderzoek). Zonder deze grens zijn er nu 5000 DEG's bij de Rokers groep. Dit op een totaalaantal van ~ 38000 genen. Er worden standaard dus erg veel genen gekenmerkd als DEG en het is dus belangrijk om hier nog een extra 'grens' voor toe te voegen. Met deze grens kunnen de genen worden getoond die uitschieten. 
 
-Nu er een set met DEG's is, kunnen we visualiseren, d.w.z. figuren maken/namaken en we kunnen ook biologische vragen gaan beantwoorden/conclusie trekken. 
+\newpage
 
-### 5.1 Volcano plot
+## 3. Analyse en Visualisaties van de DEG's
 
-Allereerst gaan we een volcano plot maken. Zoals hierboven beschreven kan je in een vulcano plot zowel de p-waarde als de LFC-waarde weergeven. Het doel is om vergelijkbare aantal DEG's te krijgen die in het originele onderzoek ook aanwezig waren.
+Nu er een set met DEG's is, kunnen we meer figuren gaan maken. Ook kan er iets meer onderzoek worden gedaan naar deze DEG's
+
+### 3.1 Volcano plot
+
+Allereerst gaan we een volcano plot maken. Zoals hierboven beschreven kan je in een vulcano LFC-waarde weergeven. Deze waarde zal gebruikt worden als grenswaarde. DEG's die hieronder komen, zullen niet als DEG worden beschouwd. Verder is ook mogelijk om een grens waarde voor de p-waarde aan te geven. De p-waarde zegt iets over de significantie van een DEG. Het zegt dus niks over het gen, maar alleen hoe zeker het is dat het ontregeld is.
+
+Het doel is om een vergelijkbaar aantal DEG's te krijgen die in het originele onderzoek ook aanwezig waren.
 
 ```{r}
 # Defineren van volcano plot functie
@@ -449,10 +462,10 @@ deseq.volcano <- function(res, datasetName) {
   return(EnhancedVolcano(res, x = 'log2FoldChange', y = 'padj',
                          lab=rownames(res),
                          title = paste(datasetName, ""),
-                         subtitle = bquote(italic('FDR <= 0.1 and absolute FC >= 1.5')),
+                         subtitle = bquote(italic('FDR <= 0.1 en absolute FC >= 1.5')),
                          labSize = 3, pointSize = 1.5, axisLabSize=10, titleLabSize=12,
                          subtitleLabSize=8, captionLabSize=10,
-                         legendLabels=c('Niet sig.',
+                         legendLabels=c('Niet significant',
                                         'Log (base 2) FC',
                                         'p-waarde',
                                         'p-waarde & Log (base 2) FC'),
@@ -472,11 +485,11 @@ deseq.volcano(res = res.smoker.control,
 
 Zoals beide volcano plots aantonen, zijn er veel genen die binnen de lijnen van de LFC-waardes vallen. Deze genen worden niet beschouwd als DEG. Zoals eerder beschreven werden deze genen wel zo gekenmerkt op basis van alleen de P-waarde. Deze valcano grafieken zijn daarom belangrijk om aan te tonen welke genen als DEG beschouwd kunnen worden. 
 
-Het valt verder op dat er veel DEG's aan de rechterkant van het figuur bevinden. Dit bevestigd eerder aangetoonde grafieken, waarin werd weergegeven dat de meeste DEG's een expressie waarde hebben die *hoger* ligt dan de controle groep.
+Het valt verder op dat er veel DEG's aan de rechterkant van het figuur bevinden. Dit bevestigd de eerder behandelde MA-plot, waarin werd weergegeven dat de meeste DEG's een expressie waarde hebben die *hoger* ligt dan de controle groep.
 
-### 5.2 Venn Diagram
+### 3.2 Venn Diagram
 
-In de volcano plot kan niet het absolute aantal DEG's worden afgelozen. Om deze reden maken we onderstaand een venn diagram. Dit is een diagram waarin eenvoudig het aantal DEG's kan worden afgelezen. Op deze manier kunnen de verschillen tussen beide groepen ook duidelijker worden. 
+In de volcano plot kan niet het absolute aantal DEG's worden afgelozen. Om deze reden maken we hieronder een venn diagram. Dit is een diagram waarin eenvoudig het aantal DEG's kan worden afgelezen. Op deze manier kunnen de verschillen tussen beide groepen ook duidelijker worden. 
 
 Verder is het in onderstaande diagram ook mogelijk om te zien hoeveel genen er overeenkomen. Dat wil zeggen, de hoeveelheid DEG's die gedeeld worden in beide groepen.
 
@@ -506,15 +519,16 @@ venn.plot <- draw.pairwise.venn(length(vaper.degs),
                         alpha = rep(0.5, 2),
                         cat.pos = c(0, 0))
 
-# Plotten van de diadram
 grid.draw(venn.plot)
 ```
 
-De venn diagram toont aan dat 619 DEG's worden gedeeld in beide groepen. Voor de rokers groep is een aantal van 1383 DEG's uniek. Totaal bevat de groep dus 619 gedeelde + 1383 unieke = 2002 DEG's
+De venn diagram toont aan dat 619 DEG's worden gedeeld in beide groepen. Voor de smokers groep is een aantal van 1383 DEG's uniek. Totaal bevat de groep dus 619 gedeelde + 1383 unieke = 2002 DEG's
 
-### 5.3 Pad analyse
+\newpage
 
-Nu er duidelijk is welke genen als DEG gekenmerkt worden, kunnen we verder kijken naar de biologische achtergrond. De DEG's worden gegroupeerd op basis van biologisch pad. 
+### 3.3 Pad analyse
+
+Nu er duidelijk is welke genen als DEG gekenmerkt worden, kunnen we verder kijken naar de biologische achtergrond. De DEG's worden gegroepeerd op basis van biologisch pad. 
 
 We voeren onze DEG's in in een online database genaamd DAVID. DAVID zal per gen kijken bij welk biologisch pad of functie het gen hoort. Er wordt per proces vervolgens ook een p-waarde gegeven. 
 
@@ -522,9 +536,7 @@ Aan de hand van de p-waardes kan aangetoond worden of een proces of pad in je li
 
 Eerst worden alle genen in het juist formaat weggeschreven naar een bestand. Vanuit dit bestand kunnen de genen in DAVID geplaatst worden.
 
-```{r}
-# data$Gene.Symbol[data$gene_name %in% vaper.degs]
-
+```{r, eval = FALSE}
 vaper.degs.write <- sapply(vaper.degs, tools::file_path_sans_ext)
 smoker.degs.write <- sapply(smoker.degs, tools::file_path_sans_ext)
 
@@ -534,7 +546,9 @@ write.table(smoker.degs.write, file = "smoker.degs.txt", row.names = F,
             quote = F, col.names = F)
 ```
 
-DAVID gaat kijken of de opgegeven DEG's voorkomen in processen in het menselijk lichaam. Er wordt ook gegeven hoeveel genen hier betrokken bij zijn. Tot slot wordt er een p-waarde gegeven. Deze waarde geeft aan hoe significant het is, dat dit proces ontregeld is. Let op dat deze waarde niet aangeeft in welke richting dit proces is ontregeld. Deze resultaten kun je downloaden. Onderstaand wordt het bestand ingeladen waar deze resultaten in staan.
+DAVID gaat kijken of de opgegeven DEG's voorkomen in processen in het menselijk lichaam. Er wordt ook gegeven hoeveel genen hier betrokken bij zijn. Tot slot wordt er een p-waarde gegeven. Deze waarde geeft aan hoe significant het is, dat dit proces ontregeld is. Let op dat deze waarde niet aangeeft in welke richting dit proces is ontregeld. 
+
+De resultaten van DAVID zijn gedownload en worden onderstaand ingeladen.
 
 ```{r}
 DAVID_genes <- read.csv("data/chart_31BB3D290B901680533944143.txt", 
@@ -542,6 +556,8 @@ DAVID_genes <- read.csv("data/chart_31BB3D290B901680533944143.txt",
 ```
 
 We willen graag kijken welke paden in het lichaam ontregeld zijn. Hiervoor moeten we dus kijken naar de p-waardes. Onderstaand wordt de juiste informatie verkregen om een figuur te maken, waarin de p-waardes worden afgezet tegen de pathway titels.
+
+Van de p-waarde wordt een -log10 genomen, omdat je anders de laagste waarde moet zoeken. Je zoekt nu naar de de staaf met de hoogste waarde.
 
 ```{r}
 DAVID.vaper.terms <- DAVID_genes$Term[DAVID_genes$Category %in% "KEGG_PATHWAY"]
@@ -560,20 +576,37 @@ Vervolgens wordt een plot gemaakt van het dataframe.
 
 ```{r}
 ggplot(DAVID.df) + geom_bar(aes(x = rownames(DAVID.df),
-                          y = -log10(DAVID.p.values),
-                          fill = -log10(DAVID.p.values)), stat = 'identity') +
-                     coord_flip() + scale_fill_gradient(low = "#eece83", high = "#83A3EE") + labs(title = "P-waardes van de KEGG pathways", subtitle = "-log10 P-waardes uitgezet tegen de pathway titels") + xlab("Titel van de pathways") + ylab("-10log van de P-waardes")
+              y = -log10(DAVID.p.values),
+              fill = -log10(DAVID.p.values)), stat = 'identity') +
+              coord_flip() + scale_fill_gradient(low = "#eece83", 
+              high = "#83A3EE") + 
+              labs(title = "P-waardes van de KEGG pathways", 
+              subtitle = "-log10 P-waardes uitgezet tegen de pathway titels") + 
+              xlab("Titel van de pathways") + ylab("-10log van de P-waardes")
 ```
 
-Van alle paden die DAVID gevonden heeft bij de opgegeven DEG's, zijn de p-waarden afgezet tegen de omschrijving van het biologische pad. 
+Zoals de barplot aantoont is er één proces die er echt uitschiet: Aminoacyl-tRNA biosynthesis. Dit proces gaat over het laden van de juiste aminzoren aan de juiste tRNA moleculen. Met zo'n grote -log10 p-waarde en dus kleine p-waarde, mag je zeggen dat dit proces significant ontregeld is. De p-waarde zegt niks over hoe het proces is ontregeld, alleen dat het zo is. We kunnen dus op deze manier niet meteen zeggen of dit proces een hogere regulatie vertoond of juist een lagere.
 
-Zoals de barplot aantoont is er één proces die er echt uitschiet: Aminoacyl-tRNA biosynthesis. Het laden van de juiste aminzoren aan de juiste tRNA moleculen is dus verstoord. De p-waarde zegt niks over hoe het proces is ontregeld, alleen dat het zo is. We kunnen dus op deze manier niet meteen zeggen of dit proces een hogere regulatie vertoond of juist een lagere.
+Je zou misschien denken dat het zeer waarschijnlijk is dat het een hogere regulatie heeft (omdat praktisch alle DEG's upregulated waren), maar het is ook mogelijk dat dit proces een inhiberend effect heeft. Dat betekent dat het juist een lagere werking heeft bij een hoge expressie. 
 
-## Conclusie
+\newpage
 
-Bij de analyse van de rokers DEG's door DAVID, is er een andere uitslag. Bij de analyse van deze genen kwamen andere processen naar boven. Er is dus een verschil zichtbaar tussen vapen en roken. Beide methoden tasten de genexpressie op andere manieren aan. Zoals eerder opgemerkt is er al veel onderzoek gedaan naar roken en is er dus nader gekeken naar de p-waardes van de vaper groep.
+## Conclusie en discussie
 
-Met deze resultaten kunnen we concluderen dat het proces van Aminoacyl-tRNA biosynthesis in leukocyten bij mensen die vapen verstoord is in vergelijking met mensen die niet vapen. Dit is aangetoond aan de hand van de lage p-waarde. De p waarde was siginficant kleiner dan 0.05 (p-waarde: 0.000000000093).
+Tijdens dit onderzoek zijn een aantal bevindingen gedaan. Allereerst is er geconcludeerd dat de dekking van de data goed genoeg was. Vervolgens is er gekeken naar de kwaliteit/verdeling. Hierover zal ik onderstaand nog iets verder op in gaan.
+
+Er is uiteindelijk een mooie set met DEG's gevonden bij beide groepen. Hierom zijn er dus ook duidelijke visialisaties gemaakt. De volcano plot toonde aan dat de meeste van deze DEG's upregulated zijn. De Venn diagram toonde de absolute en overlappende DEG's tussen de beide groepen.
+
+Het meest opvallende resultaat was toch wel de pad analyse. In deze Gene Enrichment Analyse werd aangetoond dat de synthese van tRNA significant is ontregeld in leukocyten bij vapende mensen. Deze resultaten waren *niet* terug te vinden bij de smokers groep. Zoals eerder vermeld is er al veel onderzoek gedaan naar de negatieve effecten van roken. Omdat er nog niet 'veel' onderzoek is gedaan naar vapen, was het goed om dit uit te lichten. 
+
+In het refererende artikel naar dit onderzoek werd niet specifiek vermeld dat de synthese van tRNA ontregeld was. Wel vond ik teurg dat er een opvallend resultaat was in tRNA bij mitochondriaal DNA. Er werd verder niet veel verteld hoe of wat, maar alleen dat er procentueel gezien veel DEG's waren bij vapers.
+
+Helaas was het niet meer mogelijk om verdere analyses uit te voeren naar de processen. Kort literair onderzoek toonde bijvoorbeeld aan dat er handvol onderzoeken zijn waar vergelijkbare resultaten werden gevonden. Bijvoorbeeld een onderzoek in het tijdschrift PLoS One in 2018. Dit onderzoek toonde aan dat de synthese van tRNA was verstoord in longcellen bij mensen die vapen (zie referenties). Een vervolgstap voor dit onderzoek zou bijvoorbeeld kunnen zijn om aan te tonen welke genen precies ontregeld zijn. En ook vooral *hoe* deze ontregeld zijn. 
+
+
+Tot slot wil ik nog terug komen op de kwaliteit/verdeling controle. Door de vele samples benoemde ik eerder al dat het mogelijk was om data te verwijderen. Uiteindelijk is dit niet gebeurt bij het onderzoek. Het was misschien 'beter' geweest om nog meer te kijken naar deze samples. Er waren wel een paar uitschieters die verwijderd konden worden.
+
+\newpage
 
 ## Referenties
 
@@ -582,5 +615,7 @@ Voor dit onderzoek zijn uiteraard een aantal belangrijke bronnen gebruikt. Hiero
 1. DAVID Functional Annotation Bioinformatics Microarray Analysis. (z.d.). https://david.ncifcrf.gov/
 2. I. Love, M., Anders, S., & Huber, W. (2023, 9 maart). Analyzing RNA-seq data with DESeq2. Geraadpleegd op 4 april 2023, van http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html
 3. Kempenaar, M. (2023, 14 februari). B Annotating an RNA-Seq Experiment | Analysis of Gene Expression. https://mkempenaar.github.io/gene_expression_analysis/a2-annotation.html#references
+4.Lippi, G., Favaloro, E. J., Meschi, T., Mattiuzzi, C., Borghi, L., & Cervellin, G. (2013). E-Cigarettes and Cardiovascular Risk: Beyond Science and Mysticism. Seminars in Thrombosis and Hemostasis, 40(01), 060–065. https://doi.org/10.1055/s-0033-1363468
+4. Tommasi, S., Pabustan, N., Liu, L., Chen, Y., Siegmund, K. D., & Besaratinia, A. (2021b). A novel role for vaping in mitochondrial gene dysregulation and inflammation fundamental to disease development. Scientific Reports, 11(1). https://doi.org/10.1038/s41598-021-01965-1
 
 
